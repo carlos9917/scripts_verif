@@ -90,13 +90,13 @@ Lastob=$year$m${d}23
           nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
           let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
           let lend="lstart+$nlevs_tmp"
-          echo "start/end for tmp $lstart $lend"
+          echo "start/end for first tmp file: $lstart $lend"
           for i in   $(seq "$ntemp"); do
             lstart=$lend
             let lstart="lstart + 1"
             lend=$lstart
             let lend="lend + $nlevs_tmp"
-            echo "start/end for tmp $lstart $lend"
+            #echo "start/end for tmp $lstart $lend"
             awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > temp_${i}_$DATE$HH
           done
         else 

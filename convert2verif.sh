@@ -64,23 +64,31 @@ Lastob=$year$m${d}23
     # 1. Read 2nd line to determine: n_vars (number of variables in file)
     #RESFIL=vobs$DATE
       for HH in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23; do
-      echo "Processing time $DATE"
-      #[ -s $VOBSDIR/vobs$DATE$HH ] && header=`head -1 $VOBSDIR/vobs$DATE$HH`
-      header=`head -1 $VOBSDIR/vobs$DATE$HH`
-      nvars_synop=`awk 'NR==2' $VOBSDIR/vobs$DATE$HH`
+        echo "Processing time $DATE$HH"
+        #[ -s $VOBSDIR/vobs$DATE$HH ] && header=`head -1 $VOBSDIR/vobs$DATE$HH`
+        header=`head -1 $VOBSDIR/vobs$DATE$HH`
+        nvars_synop=`awk 'NR==2' $VOBSDIR/vobs$DATE$HH`
+        read nsynop ntemp verflag <<< "$header"
+        echo "nsynop $nsynop"
+        echo "ntemp $ntemp"
+        echo "verflag $verflag"
+        echo "nvars_synop $nvars_synop"
+        #lstart="(($nsynop - $nvars_synop))"
+        #lstart=`echo "$nsynop - $nvars_synop" | bc`
+        #create file with synop data
+        let lstart="3 + $nvars_synop"
+        let lend="$lstart + $nsynop-1"
+        echo "check lstart $lstart"
+        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $VOBSDIR/vobs$DATE$HH > tmp$DATE$HH
+        #create file with tmp data (if any)
+        if [[ $ntemp -ne 0 ]]; then
+        nvars_tmp=12
+        let lstart="3 + $nvars_synop + $nsynop + 1 + $nvarstmp"
+        let lend="$lstart + $nsynop-1"
+        else 
+          echo "no temp data in this file"
+        fi
       done
-    read nsynop ntemp verflag <<< "$header"
-    echo "nsynop $nsynop"
-    echo "ntemp $ntemp"
-    echo "verflag $verflag"
-    echo "nvars_synop $nvars_synop"
-    #lstart="(($nsynop - $nvars_synop))"
-    #lstart=`echo "$nsynop - $nvars_synop" | bc`
-    let lstart="2 + $nvars_synop"
-    let lend="$lstart + $nsynop"
-    echo "check lstart $lstart"
-
-    awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $VOBSDIR/vobs$DATE$HH > tmp$DATE$HH
     #awk 'NF>=4' t2m > t2m.tmp
     
     # this gives me only the number of lines and the list of vars

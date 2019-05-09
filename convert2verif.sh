@@ -76,7 +76,7 @@ Lastob=$year$m${d}23
     echo "nvars_synop $nvars_synop"
     #lstart="(($nsynop - $nvars_synop))"
     #lstart=`echo "$nsynop - $nvars_synop" | bc`
-    let lstart="$nsynop - $nvars_synop"
+    let lstart="2 + $nvars_synop"
     let lend="$lstart + $nsynop"
     echo "check lstart $lstart"
 

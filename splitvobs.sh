@@ -12,13 +12,16 @@
 #
 
 SCRDIR=/home/cap/verify/scripts_verif
-#VOBSDIR=/data/cap/VOBS
-VOBSDIR=/data/cap/code_development_hpc/scripts_verif
-BINDIR=$VOBSDIR
-WRKDIR=/home/cap/tmp
+VOBSDIR=/data/cap/VOBS
+VFLDDIR=/data/xiaohua/vfld/nea40h11
+#VOBSDIR=/data/cap/code_development_hpc/scripts_verif
+BINDIR=/home/cap/verify/scripts_verif
+WRKDIR=/data/cap/tmp
 CYINT=24
+EXP=nea40h11
+FINI="00"
 
-years=(2019) #(2017 2018)
+years=(2017) #(2017 2018)
 month=(01) # 02 03 04 05 06 07 08 09 10 11 12)
 #TMPDIR=$WRKDIR/wrk$$
 #mkdir -p $TMPDIR
@@ -30,7 +33,7 @@ for year in ${years[*]}; do
     echo "Doing month $m"
     case $m in
       01|03|05|07|08|10|12)
-        days=(01) # 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+        days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
       ;;
       02)
          #Evaluation for leap years from https://bash.cyberciti.biz/time-and-date/find-whether-year-ls-leap-or-not/
@@ -51,8 +54,6 @@ for year in ${years[*]}; do
   
   for d in ${days[*]};do
   
-  #VOBS_START=$year$m${d}00
-  #VOBS_STOP=$year$m${d}23
   
 Start=$year$m${d}00
 Lastob=$year$m${d}23
@@ -62,29 +63,31 @@ Lastob=$year$m${d}23
     # 0. Read 1st line of header to determine:
     # n_synop  n_temp version_flag
     # 1. Read 2nd line to determine: n_vars (number of variables in file)
-    #RESFIL=vobs$DATE
       for HH in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23; do
+        TMPDIR=$WRKDIR/data_$DATE$HH
+        mkdir -p $TMPDIR
         vobsfile=$VOBSDIR/vobs$DATE$HH
-        echo "Processing time $DATE$HH"
-        #[ -s $VOBSDIR/vobs$DATE$HH ] && header=`head -1 $VOBSDIR/vobs$DATE$HH`
+        vfldfile=$VFLDDIR/vfld$EXP$DATE${FINI}${HH}
+        #echo "Processing time $DATE$HH"
+        #echo "vobs and vfld files "
+        #echo $vobsfile
+        #echo $vfldfile
+        #FOR VOBS file:
         header=`head -1 $vobsfile`
-        nvars_synop=`awk 'NR==2' $vobsfile`
         read nsynop ntemp verflag <<< "$header"
-        echo "nsynop $nsynop"
-        echo "ntemp $ntemp"
-        echo "verflag $verflag"
-        echo "nvars_synop $nvars_synop"
-        #lstart="(($nsynop - $nvars_synop))"
-        #lstart=`echo "$nsynop - $nvars_synop" | bc`
-        #create file with synop data
+        nvars_synop=`awk 'NR==2' $vobsfile`
+
+
+        #create file with synop data from VOBS
+        echo "Processing synop data for VOBS"
         let lstart="3 + $nvars_synop"
         let lend="$lstart + $nsynop - 1"
         let tmpstart="$lend + 1"
-        echo "check lstart $lstart"
-        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > synop$DATE$HH
-        #create file with tmp data (if any)
+        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/synopOBS$DATE$HH
+
+        #create temporary file(s) with tmp data (if any)
         if [[ $ntemp -ne 0 ]]; then
-          echo "Processing temp stations"
+          echo "Processing $ntemp temp stations for VOBS"
           nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
           let tmpstart="tmpstart+1"
           nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
@@ -97,17 +100,49 @@ Lastob=$year$m${d}23
             lend=$lstart
             let lend="lend + $nlevs_tmp"
             #echo "start/end for tmp $lstart $lend"
-            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > temp_${i}_$DATE$HH
+            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/tempOBS_${i}_$DATE$HH
           done
         else 
-          echo "no temp data in this file"
+          echo "no temp data in this VOBS file"
         fi
-      done
-    #awk 'NF>=4' t2m > t2m.tmp
-    
-    # this gives me only the number of lines and the list of vars
-    # for SYNOP and TEMP
-    #awk 'NF <= 2' vobs2019010100
+
+        #FOR VFLD file:
+        header=`head -1 $vfldfile`
+        nvars_synop=`awk 'NR==2' $vfldfile`
+        read nsynop ntemp verflag <<< "$header"
+
+        #create file with synop data from VFLD
+        echo "Processing synop data for VFLD"
+        let lstart="3 + $nvars_synop"
+        let lend="$lstart + $nsynop - 1"
+        let tmpstart="$lend + 1"
+        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/synopEXP$DATE$HH
+
+        #create temporary file(s) with tmp data (if any)
+        if [[ $ntemp -ne 0 ]]; then
+          echo "Processing $ntemp temp stations for VFLD"
+          nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
+          let tmpstart="tmpstart+1"
+          nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
+          let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
+          let lend="lstart+$nlevs_tmp"
+          for i in   $(seq "$ntemp"); do
+            lstart=$lend
+            let lstart="lstart + 1"
+            lend=$lstart
+            let lend="lend + $nlevs_tmp"
+            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/tempEXP_${i}_$DATE$HH
+          done
+        else 
+          echo "no temp data in this VFLD file"
+        fi
+
+      done # hour loop
+   #Call the python script to convert data for this hour  
+   #SCRIPT HERE:
+   #Delete the directories no longer needed for this date
+   #rm -rf $WRKDIR/data_${DATE}*
+
    Start=`$BINDIR/mandtg $Start + $CYINT`
    echo start is $Start
   done #start /lastob

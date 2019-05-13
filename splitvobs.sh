@@ -11,17 +11,18 @@
 # The first part is SYNOP data
 #
 
-SCRDIR=/home/cap/verify/scripts_verif
-VOBSDIR=/data/cap/VOBS
-VFLDDIR=/data/xiaohua/vfld/nea40h11
-#VOBSDIR=/data/cap/code_development_hpc/scripts_verif
-BINDIR=/home/cap/verify/scripts_verif
+#VOBSDIR=/data/cap/VOBS
+#VFLDDIR=/data/xiaohua/vfld/nea40h11
+VFLDDIR=/data/cap/code_development_hpc/scripts_verif
+VOBSDIR=/data/cap/code_development_hpc/scripts_verif
+#BINDIR=/home/cap/verify/scripts_verif
+BINDIR=/data/cap/code_development_hpc/scripts_verif
 WRKDIR=/data/cap/tmp
 CYINT=24
 EXP=nea40h11
 FINI="00"
 
-years=(2017) #(2017 2018)
+years=(2019) #(2017 2018)
 month=(01) # 02 03 04 05 06 07 08 09 10 11 12)
 #TMPDIR=$WRKDIR/wrk$$
 #mkdir -p $TMPDIR
@@ -33,7 +34,7 @@ for year in ${years[*]}; do
     echo "Doing month $m"
     case $m in
       01|03|05|07|08|10|12)
-        days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+        days=(01) # 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
       ;;
       02)
          #Evaluation for leap years from https://bash.cyberciti.biz/time-and-date/find-whether-year-ls-leap-or-not/

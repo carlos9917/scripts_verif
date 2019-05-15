@@ -83,8 +83,11 @@ Lastob=$year$m${d}23
         echo "Processing synop data for VOBS"
         let lstart="3 + $nvars_synop"
         let lend="$lstart + $nsynop - 1"
+        let vend="$lstart - 1"
         let tmpstart="$lend + 1"
-        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/synopOBS$DATE$HH
+        #this one prints the data and 2nd awk gets rid of undesirable extra spaces!
+        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1' > $TMPDIR/synopOBSData_$DATE$HH
+        awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1'  > $TMPDIR/synopOBSVars_$DATE$HH
 
         #create temporary file(s) with tmp data (if any)
         if [[ $ntemp -ne 0 ]]; then
@@ -116,8 +119,10 @@ Lastob=$year$m${d}23
         echo "Processing synop data for VFLD"
         let lstart="3 + $nvars_synop"
         let lend="$lstart + $nsynop - 1"
+        let vend="$lstart - 1"
         let tmpstart="$lend + 1"
-        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/synopEXP$DATE$HH
+        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile |  awk '{$2=$2};1' > $TMPDIR/synopEXPData_$DATE$HH
+        awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vfldfile | awk '{$2=$2};1'  > $TMPDIR/synopEXPVars_$DATE$HH
 
         #create temporary file(s) with tmp data (if any)
         if [[ $ntemp -ne 0 ]]; then

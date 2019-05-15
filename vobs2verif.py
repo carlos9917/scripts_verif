@@ -1,127 +1,141 @@
 # script to convert vobs/vfld data to verif format
 
 import datetime
-import os
+import os, sys
 import numpy as np
 import pandas as pd
+import re
 
-def read_synop(time,date,varlist=['FF','TT']):
-    rawData=pd.read_csv(f,delimiter=" ")
-    if ver==2:
-        invar = ['NN','DD','FF','TT','RH', 'PS','PE','QQ','VI','TD', 'TX','TN','GG','GX','FX']
-    elif ver==4:
-        invar = varlist
-    else:
-        print("Input version error: %d (can ony be 2 or 4)"%d)
-    rawData.columns=invar
+def read_synop(infile,varlist):
+    rawData=pd.read_csv(infile,delimiter=" ")
+    if 'FI' in varlist:
+        print("reading vfld")
+        columns = ['stationId','lat','lon'] + varlist
+        rawData.columns=columns
+        rawData=rawData.rename(columns={'FI': 'HH'})
+    else:    
+        columns=['stationId','lat','lon','HH']+varlist
+        rawData.columns=columns
+    if 'PE' in varlist:
+        rawData=rawData.rename(columns={'PE':'PE1'})
     return rawData
+
+def merge_synop(dobs,dexp,var):
+    '''
+    merge the obs and vfld data
+    '''
+    #OBS data usually longer. Merge according
+    # to this list.
+    stnlist=dobs['stationId'].tolist()
+    #subEXP=dexp[dexp['stationId'].isin(stnlist)]
+    #mergeEO=dexp.merge(dobs,how='right')#  on=['stationId'])
+    #cols=dobs.columns.tolist()
+    #cols=subEXP.columns.tolist()
+    #mergeEO = dobs.merge(dexp.reset_index(), on=cols)
+    #mergeEO = doexp.merge(dobs.reset_index(), on=cols_sel)
+    #joinEO = dobs.join(other=subEXP,on=cols)#on=['stationId'])
+    cols_sel=['stationId','lat','lon','HH',var]
+    selOBS=dobs[['stationId','lat','lon','HH',var]]
+    selEXP=dexp[['stationId','lat','lon','HH',var]]
+    mergeOE = selOBS.merge(selEXP, on='stationId')
+    #the result will contain vars with _x for OBS and _y for EXP
+    return mergeOE
+
 
 def read_temp(time,date):
     "Read the "
 
 # open output file for writing the fcst/obs data for any variable
-def write_var(var,units,Date):
-    with open('obs_fcst_'+var+'_'+str(Date)+'.txt','w') as f:
-        f.write('#variable %s\n' %(var))
-        f.write('#units: $%s$\n' %(units))
-        f.write("%s %s %s %s %s %s %s %s %s %s %s\n" %("date" , "leadtime", "location","lat", "lon", "altitude" ,"obs", "fcst", "p0", "p11", "pit"))
-    
+def write_var(infile,var,units,data,datum):
+    odir,fname=os.path.split(infile)
+    ofile=os.path.join(odir,'obs_fcst_'+'_'.join([var,str(datum)])+'.txt')
+    exists = os.path.isfile(ofile)
+    leadtime = datum[8:10]
+    date = datum[0:8]
+    data['date'] = date
+    data['leadtime'] = leadtime
+    data['p0']=np.nan
+    data['p11']=np.nan
+    data['pit']=np.nan
+    data=data.rename(columns={'TT_x': 'obs', 'TT_y':'fcst',
+        'lat_x':'lat','lon_x':'lon','HH_x':'altitude','stationId':'location'})
+    data_write=data[['date','leadtime','location','lat','lon','altitude','obs','fcst','p0','p11','pit']]
+    #import pdb
+    #pdb.set_trace()
+    if exists==True:
+        #with open(ifile,'a') as f:
+        #data_.to_csv(ofile)
+        with open(ofile, 'a') as f:
+            data_write.to_csv(f, header=False,index=False)
+    else:
+        with open(ofile,'w') as f:
+            f.write('#variable %s\n' %(var))
+            f.write('#units: $%s$\n' %(units))
+            #f.write("%s %s %s %s %s %s %s %s %s %s %s\n" %("date" , "leadtime", "location","lat", "lon", "altitude" ,"obs", "fcst", "p0", "p11", "pit"))
+            data_write.to_csv(f,sep=' ',index=False) #['date','leadtime','stationId','lat','lon','HH'](f,sep=' ')
+        
+def main(args):
+
+    #SYNOP
+    var=args.variable
+    inOBS=args.variables_vobs
+    #NOTE: this one reads only the variables information
+    vardata=np.loadtxt(inOBS,delimiter=' ',dtype=str)
+    varlist=vardata[:,0].tolist()
+    #then switch to Data
+    inOBS=re.sub('Vars','Data',inOBS)
+    dataOBS=read_synop(inOBS,varlist)
+
+    #The info from the date comes from the file name
+    path, fname = os.path.split(inOBS)
+    datum=fname.split('_')[1]
+
+    inEXP=args.variables_exp
+    vardata=np.loadtxt(inEXP,delimiter=' ',dtype=str)
+    varlist=vardata[:,0].tolist()
+    #then switch to Data
+    inEXP=re.sub('Vars','Data',inEXP)
+    dataEXP=read_synop(inEXP,varlist)
+    data=merge_synop(dataOBS,dataEXP,var)
+    write_var(inOBS,var,'K',data,datum)
+    #TEMP
+    #write_var(infile,var,'K',datum,data)
 
 
-sDate='2017103100'
-eDate='2017110700'
-TempFile='./Temperature_clean_20171031_20171106.txt'#'WP_AHAUS_2017110100_Temperature.csv'
-WindFile='./Wind_clean_20171031_20171106.txt'#'WP_AHAUS_2017110100_Wind.csv'
-GustFile='./Gust_clean_20171031_20171106.txt'
 
-startDate = datetime.datetime.strptime(sDate, "%Y%m%d%H")
-endDate = datetime.datetime.strptime(eDate, "%Y%m%d%H")
+if __name__ == '__main__':
+    import argparse
+    from argparse import RawTextHelpFormatter
 
-station_Data = '/gpfs/home/ENERCON1/00061460/DATA/AHAUS/DWD_CDC_DATA/Station_07374/MET/'
-date_list = [startDate + datetime.timedelta(days=x) for x in range(0, (endDate-startDate).days + 1)] 
+    parser = argparse.ArgumentParser(description='''If no argument provided, it will stop! 
+             Example usage: script.py -v T''',
+                                                    formatter_class=RawTextHelpFormatter)
 
-# open output file for writing the fcst/obs data for U
-ofU=open('obs_fcst_WS_mmate_'+str(sDate)+'.txt','w')
-ofU.write("%s\r\n" %("# variable: U"))
-ofU.write("%s\n" %("# units: $m s^{-1}$"))
-ofU.write("%s %s %s %s %s %s %s %s %s %s %s\n" %("date" , "leadtime", "location","lat", "lon", "altitude" ,"obs", "fcst", "p0", "p11", "pit"))
+    parser.add_argument('-v',"--variable",
+                        metavar='Variable to process',
+                        type=str,
+                        help='Variable to read and write',
+                        default="TT",
+                        required=False)
 
-# open output file for writing the fcst/obs data for Wind Gust
-ofG=open('obs_fcst_Gust_mmate_'+str(sDate)+'.txt','w')
-ofG.write("%s\r\n" %("# variable: Gust"))
-ofG.write("%s\n" %("# units: $m s^{-1}$"))
-ofG.write("%s %s %s %s %s %s %s %s %s %s %s\n" %("date" , "leadtime", "location","lat", "lon", "altitude" ,"obs", "fcst", "p0", "p11", "pit"))
+    parser.add_argument('-vvobs',"--variables_vobs",
+                        metavar='variables in VOBS file',
+                        type=str,
+                        help='This file contains the variables list',
+                        default=None,
+                        required=True)
 
-# open file with digitalized data from meteo mate
-# x,Date,Leadtime,Wind
-with open(TempFile) as f:
-    mmT = pd.read_csv(f,delimiter=" ")
-    mmT_Fcst = mmT.Temp.tolist()
-    mmT_Lt = mmT.Leadtime.tolist()
-    mmT_Hour = mmT.Hour.tolist()
-    mmT_Date = mmT.Date.tolist()
-
-
-with open(WindFile) as f:
-    mmU = pd.read_csv(f,delimiter=" ")
-    mmU_Fcst = mmU.Wind.tolist()
-    mmU_Lt = mmU.Leadtime.tolist()
-    mmU_Hour = mmU.Hour.tolist()
-    mmU_Date = mmU.Date.tolist()
-
-
-# read the data generated by the cdc script:
-for date in date_list:
-    thisdate =  date.strftime("%Y%m%d")
-    ifile = os.path.join(station_Data,'ascii_obs_cdc_'+str(thisdate)+'.txt')
-    with open(ifile) as f:
-        print "opening cdc/obs data file ",ifile
-        rawData=pd.read_csv(f,delimiter=" ")
-        rawData.columns=['mtype','sid','time','lat','lon','elev','gcode','lev','height','qc','obs'] #define headers
-        obsDates=rawData.time.tolist()
-        obsId = rawData.sid.tolist()
-        obsLAT = rawData.lat.tolist()
-        obsLON = rawData.lon.tolist()
-        obsELV = rawData.elev.tolist()
-        obs = rawData.obs.tolist()
-        obsGrib=rawData.gcode.tolist()
-        fcstHours = range(0,168)
-        missingHoursT=[];missingHoursU=[]
-        for fh in fcstHours:
-            if fh not in mmT_Lt:
-                missingHoursT.append(fh)
-            if fh not in mmU_Lt:
-                missingHoursU.append(fh)
-        print "missing hours in U ",missingHoursU
-
-        for j,obsTime in enumerate(obsDates):
-            for k,fcst in enumerate(mmT_Fcst):
-                timeMM = str(mmT_Date[k]) +'_'+ str(mmT_Hour[k]*10000).zfill(6)
-                if (timeMM == obsTime and obsGrib[j]==11):  #temperature
-                    fcst=mmT_Fcst[k] + 273.15 # convert to K
-                    leadTime = mmT_Lt[k] # want to have this as function of meteo mate lead time  instead
-                    takeDate, takeTime = obsTime.split('_')
-                    #leadTime=takeTime[0:2]
-                    #leadTime = mmT_Lt[k] # want to have this as function of meteo mate lead time  instead
-                    ofT.write("%s %s %d %.3f %.3f %.3f %.3f %.3f %s %s %s\n" %(takeDate,leadTime,obsId[j],obsLAT[j], obsLON[j], obsELV[j] ,obs[j], fcst, "-999.0", "-999.0","-999.0" ))
-
-        for j,obsTime in enumerate(obsDates):
-            for k,fcst in enumerate(mmU_Fcst):
-                timeMM = str(mmU_Date[k]) +'_'+ str(mmU_Hour[k]*10000).zfill(6)
-                if (timeMM == obsTime and obsGrib[j]==32): #wind
-                    print "time in MM and onbs file ",timeMM,obsTime
-                    fcst=mmU_Fcst[k]
-                    takeDate, takeTime = obsTime.split('_')
-                    #leadTime=takeTime[0:2]
-                    leadTime = int(mmU_Lt[k]) # want to have this as function of meteo mate lead time  instead
-                    ofU.write("%s %d %d %.3f %.3f %.3f %.3f %.3f %s %s %s\n" %(takeDate,leadTime,obsId[j],obsLAT[j], obsLON[j], obsELV[j] ,obs[j], fcst, "-999.0", "-999.0","-999.0" ))
-            #For Gust there is no data, so no writing anything here (at least for CDC)
-
-
-#import verif
-#input = verif.input.Text('obs_fcst_U10_mmate_00.txt')
-#data = verif.data.Data(inputs=[input])
-#[obs, fcst] = data.get_fields() # data.get_scores(fields, 0, axis, 0)
-#print fcst
+    parser.add_argument('-vexp',"--variables_exp",
+                        metavar='Variables in VFLD file',
+                        type=str,
+                        help='VFLD data',
+                        default=None,
+                        required=True)
+    try:
+        args = parser.parse_args()
+    except:
+        parser.print_help()
+        sys.exit(0)
+    main(args)
 
 

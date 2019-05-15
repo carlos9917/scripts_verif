@@ -48,7 +48,8 @@ def read_temp(time,date):
 # open output file for writing the fcst/obs data for any variable
 def write_var(infile,var,units,data,datum):
     odir,fname=os.path.split(infile)
-    ofile=os.path.join(odir,'obs_fcst_'+'_'.join([var,str(datum)])+'.txt')
+    odir,stuff = os.path.split(odir)
+    ofile=os.path.join(odir,'synop_'+'_'.join([var,str(datum)])+'.txt')
     exists = os.path.isfile(ofile)
     leadtime = datum[8:10]
     date = datum[0:8]

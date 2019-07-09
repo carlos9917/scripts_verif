@@ -9,7 +9,6 @@ import re
 def read_synop(infile,varlist):
     rawData=pd.read_csv(infile,delimiter=" ")
     if 'FI' in varlist:
-        print("reading vfld")
         columns = ['stationId','lat','lon'] + varlist
         rawData.columns=columns
         rawData=rawData.rename(columns={'FI': 'HH'})
@@ -43,22 +42,22 @@ def merge_synop(dobs,dexp,var):
 
 
 def read_temp(time,date):
-    "Read the "
+    "Read the temp stations"
 
 # open output file for writing the fcst/obs data for any variable
 def write_var(infile,var,units,data,datum):
-    odir,fname=os.path.split(infile)
-    odir,stuff = os.path.split(odir)
-    ofile=os.path.join(odir,'synop_'+'_'.join([var,str(datum)])+'.txt')
-    exists = os.path.isfile(ofile)
     leadtime = datum[8:10]
     date = datum[0:8]
+    odir,fname=os.path.split(infile)
+    odir,stuff = os.path.split(odir)
+    ofile=os.path.join(odir,'synop_'+'_'.join([var,str(date)])+'.txt')
+    exists = os.path.isfile(ofile)
     data['date'] = date
     data['leadtime'] = leadtime
-    data['p0']=np.nan
-    data['p11']=np.nan
-    data['pit']=np.nan
-    data=data.rename(columns={'TT_x': 'obs', 'TT_y':'fcst',
+    data['p0']=-999. #np.nan
+    data['p11']=-999. #np.nan
+    data['pit']=-999. #np.nan
+    data=data.rename(columns={var+'_x': 'obs', var+'_y':'fcst',
         'lat_x':'lat','lon_x':'lon','HH_x':'altitude','stationId':'location'})
     data_write=data[['date','leadtime','location','lat','lon','altitude','obs','fcst','p0','p11','pit']]
     #import pdb
@@ -67,16 +66,15 @@ def write_var(infile,var,units,data,datum):
         #with open(ifile,'a') as f:
         #data_.to_csv(ofile)
         with open(ofile, 'a') as f:
-            data_write.to_csv(f, header=False,index=False)
+            data_write.to_csv(f, header=False,index=False,sep=' ')
     else:
         with open(ofile,'w') as f:
             f.write('#variable %s\n' %(var))
             f.write('#units: $%s$\n' %(units))
-            #f.write("%s %s %s %s %s %s %s %s %s %s %s\n" %("date" , "leadtime", "location","lat", "lon", "altitude" ,"obs", "fcst", "p0", "p11", "pit"))
-            data_write.to_csv(f,sep=' ',index=False) #['date','leadtime','stationId','lat','lon','HH'](f,sep=' ')
+            data_write.to_csv(f,sep=' ',index=False) 
         
 def main(args):
-
+    units={'TT':'K','FF':'m/s'}
     #SYNOP
     var=args.variable
     inOBS=args.variables_vobs
@@ -98,7 +96,7 @@ def main(args):
     inEXP=re.sub('Vars','Data',inEXP)
     dataEXP=read_synop(inEXP,varlist)
     data=merge_synop(dataOBS,dataEXP,var)
-    write_var(inOBS,var,'K',data,datum)
+    write_var(inOBS,var,units[var],data,datum)
     #TEMP
     #write_var(infile,var,'K',datum,data)
 

@@ -1,22 +1,28 @@
 #!/bin/bash
-#Script to convert vobs/vfld files to verif ASCII format.
+# Script to convert vobs/vfld files to verif ASCII format.
 # Each variable is separated in a different file 
 #
-#It only works with files in vobs format 4 (convert files in format 2 with
-# the other script!)
+# It only works with files in vobs format 4 (convert files in format 2 with
+# the python script!)
 #
 # First decide which variables are stored in each file by reading
 # the header after second line:
 # The header also indicates where the TEMP data (if any) starts.
 # The first part is SYNOP data
 #
+# CURRENTLY only working for Surface data!
+#using my conda installation:
+export PATH=/data/cap/miniconda2/bin:$PATH
+source activate py37
+py36=/data/cap/miniconda2/envs/py37/bin/python
 
-#VOBSDIR=/data/cap/VOBS
-#VFLDDIR=/data/xiaohua/vfld/nea40h11
-VFLDDIR=/data/cap/code_development_hpc/scripts_verif
-VOBSDIR=/data/cap/code_development_hpc/scripts_verif
+VOBSDIR=/data/cap/VOBS
+VFLDDIR=/data/xiaohua/vfld/nea40h11
+#VFLDDIR=/data/cap/code_development_hpc/scripts_verif
+#VOBSDIR=/data/cap/code_development_hpc/scripts_verif
 #BINDIR=/home/cap/verify/scripts_verif
-BINDIR=/data/cap/code_development_hpc/scripts_verif
+BINDIR=/home/cap/verify/scripts_verif
+#BINDIR=/data/cap/code_development_hpc/scripts_verif
 WRKDIR=/data/cap/tmp
 CYINT=24
 EXP=nea40h11
@@ -34,7 +40,8 @@ for year in ${years[*]}; do
     echo "Doing month $m"
     case $m in
       01|03|05|07|08|10|12)
-        days=(01) # 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+        #days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+        days=(01)
       ;;
       02)
          #Evaluation for leap years from https://bash.cyberciti.biz/time-and-date/find-whether-year-ls-leap-or-not/
@@ -64,6 +71,7 @@ Lastob=$year$m${d}23
     # 0. Read 1st line of header to determine:
     # n_synop  n_temp version_flag
     # 1. Read 2nd line to determine: n_vars (number of variables in file)
+    echo "Doing date $DATE" 
       for HH in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23; do
         TMPDIR=$WRKDIR/data_$DATE$HH
         mkdir -p $TMPDIR
@@ -97,7 +105,7 @@ Lastob=$year$m${d}23
           nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
           let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
           let lend="lstart+$nlevs_tmp"
-          echo "start/end for first tmp file: $lstart $lend"
+          #echo "start/end for first tmp file: $lstart $lend"
           for i in   $(seq "$ntemp"); do
             lstart=$lend
             let lstart="lstart + 1"
@@ -142,12 +150,13 @@ Lastob=$year$m${d}23
         else 
           echo "no temp data in this VFLD file"
         fi
+      #Call the python script to convert SYNOP data for this hour  
+      $py36 $BINDIR/vobs2verif.py -v 'TT' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
+      $py36 $BINDIR/vobs2verif.py -v 'FF' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
 
       done # hour loop
-   #Call the python script to convert data for this hour  
-   #SCRIPT HERE:
    #Delete the directories no longer needed for this date
-   #rm -rf $WRKDIR/data_${DATE}*
+   #rm -rf $WRKDIR/data_${DATE}??
 
    Start=`$BINDIR/mandtg $Start + $CYINT`
    echo start is $Start

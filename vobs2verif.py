@@ -107,7 +107,7 @@ if __name__ == '__main__':
     from argparse import RawTextHelpFormatter
 
     parser = argparse.ArgumentParser(description='''If no argument provided, it will stop! 
-             Example usage: script.py -v T''',
+             Example usage: script.py -v "T" -vvobs file_with_list_of_vobs -vexp file_with_list_of_vexp''',
                                                     formatter_class=RawTextHelpFormatter)
 
     parser.add_argument('-v',"--variable",
@@ -118,16 +118,16 @@ if __name__ == '__main__':
                         required=False)
 
     parser.add_argument('-vvobs',"--variables_vobs",
-                        metavar='variables in VOBS file',
+                        metavar='File with the list of variables in the VOBS file',
                         type=str,
-                        help='This file contains the variables list',
+                        help='This file contains the variables list extracted from the original vobs file',
                         default=None,
                         required=True)
 
     parser.add_argument('-vexp',"--variables_exp",
-                        metavar='Variables in VFLD file',
+                        metavar='File with the list of variables in the VFLD file',
                         type=str,
-                        help='VFLD data',
+                        help='This file contains the variable list extracted from the original vfld file',
                         default=None,
                         required=True)
     try:

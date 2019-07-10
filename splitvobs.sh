@@ -1,42 +1,36 @@
 #!/bin/bash
 # Script to convert vobs/vfld files to verif ASCII format.
-# Each variable is separated in a different file 
+# Each variable is separated in a different file by the bash process.
+# The script calls a python code at the end to convert the data to
+# a verif-compatible ASCII format
 #
 # It only works with files in vobs format 4 (convert files in format 2 with
 # the python script!)
 #
-# First decide which variables are stored in each file by reading
-# the header after second line:
+# First read the first line to determine number of synop and temp variables in file
+# Then decide which variables are stored in each file by reading
+# the header after second line.
 # The header also indicates where the TEMP data (if any) starts.
-# The first part is SYNOP data
+# The first part of the file contains the SYNOP data
 #
-# CURRENTLY only working for Surface data!
-#using my conda installation:
-export PATH=/data/cap/miniconda2/bin:$PATH
-source activate py37
-py36=/data/cap/miniconda2/envs/py37/bin/python
-
-VOBSDIR=/data/cap/VOBS
-VFLDDIR=/data/xiaohua/vfld/nea40h11
-#VFLDDIR=/data/cap/code_development_hpc/scripts_verif
-#VOBSDIR=/data/cap/code_development_hpc/scripts_verif
-#BINDIR=/home/cap/verify/scripts_verif
-BINDIR=/home/cap/verify/scripts_verif
-#BINDIR=/data/cap/code_development_hpc/scripts_verif
-WRKDIR=/data/cap/tmp
-CYINT=24
-EXP=nea40h11
-FINI="00"
-
-years=(2019) #(2017 2018)
-month=(01) # 02 03 04 05 06 07 08 09 10 11 12)
-#TMPDIR=$WRKDIR/wrk$$
-#mkdir -p $TMPDIR
-
-for year in ${years[*]}; do
-  echo "processing year $year"
-
-  for m in ${month[*]};do
+# Output:
+# The files are split into a synopEXPData_YYYYMMDDFI (FI forecast initial hour)
+# and synopOBS_YYYYMMDDFI for vlfd/vobs
+# Additionally, an extra Vars file contains the list of variables in each file
+# (essentially the header).
+# The data is placed into directories data_YYYYMMDDFI
+# Separate files are created for the TEMP data (one per station)
+#
+# CURRENTLY only working for Surface data, but the TEMP data
+# is already being split into separate files
+# No functionality for adding the TEMP data into the verif files
+# is included yet in the python script (since verif cannot
+# handle TEMP data yet, only surface stations!)
+#
+#
+#Function to determine days in the month:
+days_in_month ()
+{
     echo "Doing month $m"
     case $m in
       01|03|05|07|08|10|12)
@@ -59,12 +53,43 @@ for year in ${years[*]}; do
          days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30)
       ;;
       esac
-  
+}
+
+#using my conda installation:
+export PATH=/data/cap/miniconda2/bin:$PATH
+source activate py37
+py36=/data/cap/miniconda2/envs/py37/bin/python
+
+#VOBSDIR=/data/cap/VOBS
+#VFLDDIR=/data/xiaohua/vfld/nea40h11
+VFLDDIR=/data/cap/code_development_hpc/scripts_verif
+VOBSDIR=/data/cap/code_development_hpc/scripts_verif
+#BINDIR=/home/cap/verify/scripts_verif
+#BINDIR=/home/cap/verify/scripts_verif
+BINDIR=/data/cap/code_development_hpc/scripts_verif
+WRKDIR=/data/cap/tmp
+CYINT=24
+EXP=nea40h11 #CHANGE
+FINI="00" #CHANGE
+hour_ini=00 #use 2 digits for defining the Start and Lastob properly
+hour_end=00
+
+years=(2019) #(2017 2018)
+month=(01) # 02 03 04 05 06 07 08 09 10 11 12)
+
+for year in ${years[*]}; do
+  echo "processing year $year"
+
+  for m in ${month[*]};do
+
+  days_in_month #calculates days[*]
+
   for d in ${days[*]};do
   
   
-Start=$year$m${d}00
-Lastob=$year$m${d}23
+  Start=$year$m${d}${hour_ini}
+  Lastob=$year$m${d}${hour_end}
+  echo "Start and Last hours to analyze: $Start $Lastob"
   while [ $Start -le $Lastob ]
   do
     DATE=`$BINDIR/mandtg -date $Start`
@@ -72,7 +97,7 @@ Lastob=$year$m${d}23
     # n_synop  n_temp version_flag
     # 1. Read 2nd line to determine: n_vars (number of variables in file)
     echo "Doing date $DATE" 
-      for HH in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23; do
+      for HH in `seq -w $hour_ini $hour_end`; do
         TMPDIR=$WRKDIR/data_$DATE$HH
         mkdir -p $TMPDIR
         vobsfile=$VOBSDIR/vobs$DATE$HH

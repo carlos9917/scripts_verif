@@ -35,45 +35,17 @@ def filter_synop(data,stnlist):
 def read_temp(time,date):
     "Read the temp stations"
 
-# open output file for writing the fcst/obs data for any variable
-def write_var(infile,var,units,data,datum):
-    leadtime = datum[8:10]
-    date = datum[0:8]
-    odir,fname=os.path.split(infile)
-    odir,stuff = os.path.split(odir)
-    ofile=os.path.join(odir,'synop_'+'_'.join([var,str(date)])+'.txt')
-    exists = os.path.isfile(ofile)
-    data['date'] = date
-    data['leadtime'] = leadtime
-    data['p0']=-999. #np.nan
-    data['p11']=-999. #np.nan
-    data['pit']=-999. #np.nan
-    data=data.rename(columns={var+'_x': 'obs', var+'_y':'fcst',
-        'lat_x':'lat','lon_x':'lon','HH_x':'altitude','stationId':'location'})
-    data_write=data[['date','leadtime','location','lat','lon','altitude','obs','fcst','p0','p11','pit']]
-    #import pdb
-    #pdb.set_trace()
-    if exists==True:
-        #with open(ifile,'a') as f:
-        #data_.to_csv(ofile)
-        with open(ofile, 'a') as f:
-            data_write.to_csv(f, header=False,index=False,sep=' ')
-    else:
-        with open(ofile,'w') as f:
-            f.write('#variable %s\n' %(var))
-            f.write('#units: $%s$\n' %(units))
-            data_write.to_csv(f,sep=' ',index=False) 
-        
 def main(args):
     version_out=4
     #SYNOP
     inEXP=args.variables_exp #file with variables in vfld file
+    model=args.exp_name
+    ofile=args.output_file
     stndata=pd.read_csv(args.station_list,sep=r"\s+",engine='python',header=None,index_col=None)
     stndata.columns=['lat','lon','stationId','incl']
     slat, slon, istnid,station_heights = stndata['lat'].values,stndata['lon'].values,stndata['stationId'].values, np.full(stndata['lat'].shape[0],-99.0)
     #The info from the date comes from the file name
     path, fname = os.path.split(inEXP)
-    datum=fname.split('_')[1]
     #NOTE: this one reads only the variables information
     vardata=np.loadtxt(inEXP,delimiter=' ',dtype=str)
     varlist=vardata[:,0].tolist()
@@ -86,10 +58,11 @@ def main(args):
 
     #NOTE: used 4 decimal places to mimic the output saved in the vfld files.
     #Leading zero in station name should not be an issue, since output will be used by monitor
-    newvfld='vfldnea40h11'
+    newvfld='vfld'+model
     odir,fname=os.path.split(inEXP)
-    out_vfld=os.path.join(odir,newvfld+str(datum)+'_NEW.dat')
-    dataNEW.to_csv(out_vfld,sep=' ',header=None,index=False,float_format='%2.4f')
+    #out_vfld=os.path.join(odir,newvfld+str(datum)) #+'_NEW.dat')
+    dataNEW.to_csv(ofile,sep=' ',header=None,index=False,float_format='%2.4f')
+    print("Writing to file %s"%ofile)
     #write the header part:
     soffset=15
     column_variables=[]
@@ -97,18 +70,18 @@ def main(args):
         column_variables.append(var+' '*soffset+str(varacct[i])+'\n')
     column_variables.append(varlist[-1]+' '*soffset+str(varacct[-1]))    
     header_variables=''.join(column_variables)
-    for line in fileinput.input(files=out_vfld,inplace=True):
+    for line in fileinput.input(files=ofile,inplace=True):
         if fileinput.isfirstline():
             print(header_variables)
         print(line.strip())    
     n_s_inside = dataNEW.shape[0]
     extra_header=" "+str(n_s_inside)+"     0     "+str(version_out)+"\n"+" "*10+str(len(varlist))
-    for line in fileinput.input(files=out_vfld,inplace=True):
+    for line in fileinput.input(files=ofile,inplace=True):
         if fileinput.isfirstline():
             print(extra_header)
         print(line.strip())    
-
-    #write_var(inOBS,var,units[var],data,datum)
+    #TODO: add temp files at the end of the file (no filtering)
+    #TEMP
 
 
 if __name__ == '__main__':
@@ -126,17 +99,31 @@ if __name__ == '__main__':
     #                    default=None,
     #                    required=True)
 
+    parser.add_argument('-ofile',"--output_file",
+                        metavar='output vfld file',
+                        type=str,
+                        help='The file where I will write the reduced data',
+                        default=None,
+                        required=True)
+
     parser.add_argument('-stn',"--station_list",
                         metavar='File with the list of stations I want to keep in new vfld file',
                         type=str,
                         help='This file contains the list of stations I want to keep',
-                        default='./stncoord.dat', 
+                        default='/home/cap/verify/scripts_verif/stncoord.dat', 
                         required=False)
 
     parser.add_argument('-vexp',"--variables_exp",
                         metavar='File with variables in VFLD file',
                         type=str,
                         help='This file contains the variable list from VFLD data',
+                        default=None,
+                        required=True)
+
+    parser.add_argument('-model',"--exp_name",
+                        metavar='Name of the experiment',
+                        type=str,
+                        help='Experiment name',
                         default=None,
                         required=True)
     try:

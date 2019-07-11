@@ -1,4 +1,7 @@
 #!/bin/bash
+# This version DOES NOT process VOBS, since for models
+# like EC the forecast runs for 48 hours
+#
 # Script to convert vobs/vfld files to verif ASCII format.
 # Each variable is separated in a different file by the bash process.
 # The script calls a python code at the end to convert the data to
@@ -34,7 +37,8 @@ days_in_month ()
     echo "Doing month $m"
     case $m in
       01|03|05|07|08|10|12)
-        days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+        #days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+        days=(01 02 03 04 05 06 07 08 09 10)
       ;;
       02)
          #Evaluation for leap years from https://bash.cyberciti.biz/time-and-date/find-whether-year-ls-leap-or-not/
@@ -68,7 +72,7 @@ BINDIR=/home/cap/verify/scripts_verif
 #VOBSDIR=/data/cap/code_development_hpc/scripts_verif
 #BINDIR=/data/cap/code_development_hpc/scripts_verif
 WRKDIR=/data/cap/vfld_reduced/$EXP
-CYINT=24
+CYINT=48 # CHANGE
 #FINI="00" #CHANGE
 if [[ -z "$1"  ]]; then
       FINI=00
@@ -83,7 +87,7 @@ hour_end=47
 cverif=False #CHANGE. if True, will convert to verif data. If not, only split the files
 rvfld=True #CHANGE. if True, will reduce the file size
 years=(2019) #(2017 2018)
-month=(04 05 06) # 02 03 04 05 06 07 08 09 10 11 12)
+month=(07) # 02 03 04 05 06 07 08 09 10 11 12)
 
 mkdir -p $WRKDIR || exit
 
@@ -111,48 +115,43 @@ for year in ${years[*]}; do
         echo "Doing hour $HH"
         TMPDIR=$WRKDIR/data_$DATE$HH$FINI
         mkdir -p $TMPDIR
-        vobsfile=$VOBSDIR/vobs$DATE$HH
+        #vobsfile=$VOBSDIR/vobs$DATE$HH
         vfldfile=$VFLDDIR/vfld$EXP$DATE${FINI}${HH}
-        #echo "Processing time $DATE$HH"
-        #echo "vobs and vfld files "
-        #echo $vobsfile
-        #echo "vfld file: $vfldfile"
-        #FOR VOBS file:
-        header=`head -1 $vobsfile`
-        read nsynop ntemp verflag <<< "$header"
-        nvars_synop=`awk 'NR==2' $vobsfile`
+        #header=`head -1 $vobsfile`
+        #read nsynop ntemp verflag <<< "$header"
+        #nvars_synop=`awk 'NR==2' $vobsfile`
 
 
         #create file with synop data from VOBS
-        echo "Processing $nsynop synop stations for VOBS"
-        let lstart="3 + $nvars_synop"
-        let lend="$lstart + $nsynop - 1"
-        let vend="$lstart - 1"
-        let tmpstart="$lend + 1"
+        #echo "Processing $nsynop synop stations for VOBS"
+        #let lstart="3 + $nvars_synop"
+        #let lend="$lstart + $nsynop - 1"
+        #let vend="$lstart - 1"
+        #let tmpstart="$lend + 1"
         #this one prints the data and 2nd awk gets rid of undesirable extra spaces!
-        awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1' > $TMPDIR/synopOBSData_$DATE$HH
-        awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1'  > $TMPDIR/synopOBSVars_$DATE$HH
+        #awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1' > $TMPDIR/synopOBSData_$DATE$HH
+        #awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1'  > $TMPDIR/synopOBSVars_$DATE$HH
 
         #create temporary file(s) with tmp data (if any)
-        if [[ $ntemp -ne 0 ]]; then
-          echo "Processing $ntemp temp stations for VOBS"
-          nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
-          let tmpstart="tmpstart+1"
-          nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
-          let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
-          let lend="lstart+$nlevs_tmp"
-          #echo "start/end for first tmp file: $lstart $lend"
-          for i in   $(seq "$ntemp"); do
-            lstart=$lend
-            let lstart="lstart + 1"
-            lend=$lstart
-            let lend="lend + $nlevs_tmp"
-            #echo "start/end for tmp $lstart $lend"
-            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/tempOBS_${i}_$DATE$HH
-          done
-        else 
-          echo "no temp data in this VOBS file"
-        fi
+        #if [[ $ntemp -ne 0 ]]; then
+        #  echo "Processing $ntemp temp stations for VOBS"
+        #  nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
+        #  let tmpstart="tmpstart+1"
+        #  nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
+        #  let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
+        #  let lend="lstart+$nlevs_tmp"
+        #  #echo "start/end for first tmp file: $lstart $lend"
+        #  for i in   $(seq "$ntemp"); do
+        #    lstart=$lend
+        #    let lstart="lstart + 1"
+        #    lend=$lstart
+        #    let lend="lend + $nlevs_tmp"
+        #    #echo "start/end for tmp $lstart $lend"
+        #    awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/tempOBS_${i}_$DATE$HH
+        #  done
+        #else 
+        #  echo "no temp data in this VOBS file"
+        #fi
 
         #FOR VFLD file:
         header=`head -1 $vfldfile`
@@ -169,31 +168,31 @@ for year in ${years[*]}; do
         awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vfldfile | awk '{$2=$2};1'  > $TMPDIR/synopEXPVars_$DATE$HH
 
         #create temporary file(s) with tmp data (if any)
-        if [[ $ntemp -ne 0 ]]; then
-          echo "Processing $ntemp temp stations for VFLD"
-          nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
-          let tmpstart="tmpstart+1"
-          nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
-          let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
-          let lend="lstart+$nlevs_tmp"
-          for i in   $(seq "$ntemp"); do
-            lstart=$lend
-            let lstart="lstart + 1"
-            lend=$lstart
-            let lend="lend + $nlevs_tmp"
-            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/tempEXP_${i}_$DATE$HH
-          done
-        else 
-          echo "no temp data in this VFLD file"
-        fi
+        #if [[ $ntemp -ne 0 ]]; then
+        #  echo "Processing $ntemp temp stations for VFLD"
+        #  nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
+        #  let tmpstart="tmpstart+1"
+        #  nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
+        #  let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
+        #  let lend="lstart+$nlevs_tmp"
+        #  for i in   $(seq "$ntemp"); do
+        #    lstart=$lend
+        #    let lstart="lstart + 1"
+        #    lend=$lstart
+        #    let lend="lend + $nlevs_tmp"
+        #    awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/tempEXP_${i}_$DATE$HH
+        #  done
+        #else 
+        #  echo "no temp data in this VFLD file"
+        #fi
       #Call the python script to convert SYNOP data for this hour  
-      if [ $cverif == True ]; then
-       echo "Conversion to verif format"
-       $py36 $BINDIR/vobs2verif.py -v 'TT' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
-       $py36 $BINDIR/vobs2verif.py -v 'FF' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
-       #Delete the directories no longer needed for this date
-       rm -rf $TMPDIR # $WRKDIR/data_${DATE}??
-      elif [ $rvfld == True ]; then
+      #if [ $cverif == True ]; then
+      # echo "Conversion to verif format"
+      # $py36 $BINDIR/vobs2verif.py -v 'TT' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
+      # $py36 $BINDIR/vobs2verif.py -v 'FF' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
+      # #Delete the directories no longer needed for this date
+      # rm -rf $WRKDIR/data_${DATE}??
+      if [ $rvfld == True ]; then
        echo "Reducing vlfd file $vfldfile"
         chead=`head -1 $vfldfile`
         read num_synop stuff stuff <<< "$chead"
@@ -202,7 +201,7 @@ for year in ${years[*]}; do
         chead=`head -1 $WRKDIR/vfld$EXP$DATE${FINI}${HH}`
         read num_synop stuff stuff <<< "$chead"
         echo "NSYNOP after reduction: $num_synop"
-        rm -rf $TMPDIR # $WRKDIR/data_${DATE}??
+        rm -rf $TMPDIR
        else
            echo "only splitting files"
       fi

@@ -7,7 +7,7 @@
 #PBS -q gpc
 #PBS -V
 #PBS -l walltime=24:00:00
-#PBS -N split_all_24_27
+#PBS -N split12
 
 export MPPEXEC=""
 export MPPGL=""
@@ -18,4 +18,4 @@ ulimit -S -m unlimited || ulimit -m
 ulimit -S -d unlimited || ulimit -d
 
 WRKDIR=/home/cap/verify/scripts_verif
-bash $WRKDIR/splitvobs_all.sh >& $WRKDIR/salida_all
+bash $WRKDIR/splitvobs_EC.sh 12 >& $WRKDIR/salida_split_12

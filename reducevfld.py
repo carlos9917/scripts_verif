@@ -38,7 +38,7 @@ def read_temp(time,date):
 def main(args):
     version_out=4
     #SYNOP
-    inEXP=args.variables_exp #file with variables in vfld file
+    inEXP=args.variables_exp #file with variables in vfld or vobs file
     model=args.exp_name
     ofile=args.output_file
     stndata=pd.read_csv(args.station_list,sep=r"\s+",engine='python',header=None,index_col=None)
@@ -58,9 +58,14 @@ def main(args):
 
     #NOTE: used 4 decimal places to mimic the output saved in the vfld files.
     #Leading zero in station name should not be an issue, since output will be used by monitor
-    newvfld='vfld'+model
+    #if model in ['nea40h11','EC9']:
+    #    newvfld='vfld'+model
+    #elif model == 'vobs':
+    #    newvfld='vobs'
+    #else:
+    #    print('Model %s not known'%model)
+    #    sys.exit()
     odir,fname=os.path.split(inEXP)
-    #out_vfld=os.path.join(odir,newvfld+str(datum)) #+'_NEW.dat')
     dataNEW.to_csv(ofile,sep=' ',header=None,index=False,float_format='%2.4f')
     print("Writing to file %s"%ofile)
     #write the header part:
@@ -114,16 +119,16 @@ if __name__ == '__main__':
                         required=False)
 
     parser.add_argument('-vexp',"--variables_exp",
-                        metavar='File with variables in VFLD file',
+                        metavar='File with variables in VFLD or VOBS file',
                         type=str,
-                        help='This file contains the variable list from VFLD data',
+                        help='This file contains the variable list from VFLD or VOBS data',
                         default=None,
                         required=True)
 
     parser.add_argument('-model',"--exp_name",
                         metavar='Name of the experiment',
                         type=str,
-                        help='Experiment name',
+                        help='Experiment name. If experiment name is vobs, then convert vobs files',
                         default=None,
                         required=True)
     try:

@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -v OMP_NUM_THREADS=1
+#PBS -N merge750
+#PBS -l pvmem=20gb
+#PBS -o /data/cap/scripts
+#PBS -j oe -W umask=022
+#PBS -q gpc
+#PBS -V
+#PBS -l walltime=24:00:00
+
+export MPPEXEC=""
+export MPPGL=""
+export NPOOLS=1
+export NPROC=1
+ulimit -S -s unlimited || ulimit -s
+ulimit -S -m unlimited || ulimit -m
+ulimit -S -d unlimited || ulimit -d
+
+WRKDIR=/data/cap/merge_upscale/mergevfld_750_models
+/bin/bash -l $WRKDIR/run_merge750_IGB.sh >& $WRKDIR/salida

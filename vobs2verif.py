@@ -45,12 +45,20 @@ def read_temp(time,date):
     "Read the temp stations"
 
 # open output file for writing the fcst/obs data for any variable
-def write_var(infile,var,units,data,datum):
+def write_var(infile,var,data,datum,ini):
+    # creates one file per day
+    units={'TT':'K','FF':'m/s','TD':'K','RH':'%','PS':'hPa'}
+    real_names={'TT':'Temperature','FF':'WindSpeed','TD':'DewPointTemperature','RH':'RelativeHumidity',
+                'PS':'Pressure'}
     leadtime = datum[8:10]
-    date = datum[0:8]
+    #date = str(datum[0:8])+str(ini)
+    date = str(datum[0:8]) #date for the data below
+    date_file = str(datum[0:6])+str(ini) #date for the file. All data will go in one file per month
     odir,fname=os.path.split(infile)
     odir,stuff = os.path.split(odir)
-    ofile=os.path.join(odir,'synop_'+'_'.join([var,str(date)])+'.txt')
+    ofile=os.path.join(odir,'synop_'+'_'.join([var,date_file])+'.txt')
+
+
     exists = os.path.isfile(ofile)
     data['date'] = date
     data['leadtime'] = leadtime
@@ -69,15 +77,15 @@ def write_var(infile,var,units,data,datum):
             data_write.to_csv(f, header=False,index=False,sep=' ')
     else:
         with open(ofile,'w') as f:
-            f.write('#variable %s\n' %(var))
-            f.write('#units: $%s$\n' %(units))
+            f.write('# variable: %s\n' %real_names[var])
+            f.write('# units: $%s$\n' %units[var])
             data_write.to_csv(f,sep=' ',index=False) 
         
 def main(args):
-    units={'TT':'K','FF':'m/s'}
     #SYNOP
     var=args.variable
     inOBS=args.variables_vobs
+    ini=args.init_time
     #NOTE: this one reads only the variables information
     vardata=np.loadtxt(inOBS,delimiter=' ',dtype=str)
     varlist=vardata[:,0].tolist()
@@ -96,7 +104,7 @@ def main(args):
     inEXP=re.sub('Vars','Data',inEXP)
     dataEXP=read_synop(inEXP,varlist)
     data=merge_synop(dataOBS,dataEXP,var)
-    write_var(inOBS,var,units[var],data,datum)
+    write_var(inOBS,var,data,datum,ini)
     #TEMP
     #write_var(infile,var,'K',datum,data)
 
@@ -128,6 +136,13 @@ if __name__ == '__main__':
                         metavar='File with the list of variables in the VFLD file',
                         type=str,
                         help='This file contains the variable list extracted from the original vfld file',
+                        default=None,
+                        required=True)
+
+    parser.add_argument('-ini',"--init_time",
+                        metavar='init time, used to set output file',
+                        type=str,
+                        help='The init time of the simulation',
                         default=None,
                         required=True)
     try:

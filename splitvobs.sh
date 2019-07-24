@@ -1,4 +1,7 @@
 #!/bin/bash
+#TO CORRECT ---> TEMP data is not solved properly yet!!!
+# see the script I wrote to convert XY's data!
+echo "Warning: TEMP data not being converted properly"
 # Script to convert vobs/vfld files to verif ASCII format.
 # Each variable is separated in a different file by the bash process.
 # The script calls a python code at the end to convert the data to
@@ -58,7 +61,7 @@ days_in_month ()
 export PATH=/data/cap/miniconda2/bin:$PATH
 source activate py37
 py36=/data/cap/miniconda2/envs/py37/bin/python
-EXP=EC9 #nea40h11 #CHANGE
+EXP=nea40h11 #nea40h11 #CHANGE
 #for hpc:
 VOBSDIR=/data/cap/VOBS
 VFLDDIR=/data/xiaohua/vfld/$EXP
@@ -67,26 +70,33 @@ BINDIR=/home/cap/verify/scripts_verif
 #VFLDDIR=/data/cap/code_development_hpc/scripts_verif
 #VOBSDIR=/data/cap/code_development_hpc/scripts_verif
 #BINDIR=/data/cap/code_development_hpc/scripts_verif
-WRKDIR=/data/cap/vfld_reduced/$EXP
+#WRKDIR=/data/cap/vfld_reduced/$EXP
+#WRKDIR=/data/cap/verif_formatted_data/$EXP
+WRKDIR=/data/cap/vobs_vfld_split/
 CYINT=24
 #FINI="00" #CHANGE
-if [[ -z "$1"  ]]; then
-      FINI=00
-      echo "FINI set to $FINI by default"
-else
-    FINI=$1
-      echo "FINI set by user to $FINI"
-fi
+#if [[ -z "$1"  ]]; then
+#      FINI=00
+#      echo "FINI set to $FINI by default"
+#else
+#    FINI=$1
+#      echo "FINI set by user to $FINI"
+#fi
 
 hour_ini=00 #use 2 digits for defining the Start and Lastob properly
-hour_end=47
+hour_end=23
 cverif=False #CHANGE. if True, will convert to verif data. If not, only split the files
-rvfld=True #CHANGE. if True, will reduce the file size
+rvfld=False #CHANGE. if True, will reduce the file size. If not only split the files
 years=(2019) #(2017 2018)
-month=(04 05 06) # 02 03 04 05 06 07 08 09 10 11 12)
+month=(05) # 02 03 04 05 06 07 08 09 10 11 12)
+vars=(PS RH TD) # Not active yet. ONLY needed by the conversion script, not to split the files
+init_times=(00 06 12 18)
 
 mkdir -p $WRKDIR || exit
-
+#for var in ${vars[@]}; do
+#for FINI in ${init_times[@]}; do
+#done
+for FINI in ${init_times[@]}; do
 for year in ${years[*]}; do
   echo "processing year $year"
 
@@ -134,25 +144,26 @@ for year in ${years[*]}; do
         awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vobsfile | awk '{$2=$2};1'  > $TMPDIR/synopOBSVars_$DATE$HH
 
         #create temporary file(s) with tmp data (if any)
-        if [[ $ntemp -ne 0 ]]; then
-          echo "Processing $ntemp temp stations for VOBS"
-          nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
-          let tmpstart="tmpstart+1"
-          nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
-          let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
-          let lend="lstart+$nlevs_tmp"
-          #echo "start/end for first tmp file: $lstart $lend"
-          for i in   $(seq "$ntemp"); do
-            lstart=$lend
-            let lstart="lstart + 1"
-            lend=$lstart
-            let lend="lend + $nlevs_tmp"
-            #echo "start/end for tmp $lstart $lend"
-            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/tempOBS_${i}_$DATE$HH
-          done
-        else 
-          echo "no temp data in this VOBS file"
-        fi
+        #TURNING THIS OFF FOR THE MOMENT, since verif does not use TEMP data
+        #if [[ $ntemp -ne 0 ]]; then
+        #  echo "Processing $ntemp temp stations for VOBS"
+        #  nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
+        #  let tmpstart="tmpstart+1"
+        #  nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vobsfile`
+        #  let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
+        #  let lend="lstart+$nlevs_tmp"
+        #  #echo "start/end for first tmp file: $lstart $lend"
+        #  for i in   $(seq "$ntemp"); do
+        #    lstart=$lend
+        #    let lstart="lstart + 1"
+        #    lend=$lstart
+        #    let lend="lend + $nlevs_tmp"
+        #    #echo "start/end for tmp $lstart $lend"
+        #    awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vobsfile > $TMPDIR/tempOBS_${i}_$DATE$HH
+        #  done
+        #else 
+        #  echo "no temp data in this VOBS file"
+        #fi
 
         #FOR VFLD file:
         header=`head -1 $vfldfile`
@@ -169,28 +180,29 @@ for year in ${years[*]}; do
         awk -v a=3 -v b="$vend" 'NR >= a && NR <= b' $vfldfile | awk '{$2=$2};1'  > $TMPDIR/synopEXPVars_$DATE$HH
 
         #create temporary file(s) with tmp data (if any)
-        if [[ $ntemp -ne 0 ]]; then
-          echo "Processing $ntemp temp stations for VFLD"
-          nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
-          let tmpstart="tmpstart+1"
-          nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
-          let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
-          let lend="lstart+$nlevs_tmp"
-          for i in   $(seq "$ntemp"); do
-            lstart=$lend
-            let lstart="lstart + 1"
-            lend=$lstart
-            let lend="lend + $nlevs_tmp"
-            awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/tempEXP_${i}_$DATE$HH
-          done
-        else 
-          echo "no temp data in this VFLD file"
-        fi
+        #TURNING THIS OFF FOR THE MOMENT, since verif does not use TEMP data
+        #if [[ $ntemp -ne 0 ]]; then
+        #  echo "Processing $ntemp temp stations for VFLD"
+        #  nlevs_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
+        #  let tmpstart="tmpstart+1"
+        #  nvars_tmp=`awk -v a=$tmpstart 'NR == a' $vfldfile`
+        #  let lstart="$nvars_synop + $nsynop + 5 + $nvars_tmp"
+        #  let lend="lstart+$nlevs_tmp"
+        #  for i in   $(seq "$ntemp"); do
+        #    lstart=$lend
+        #    let lstart="lstart + 1"
+        #    lend=$lstart
+        #    let lend="lend + $nlevs_tmp"
+        #    awk -v a="$lstart" -v b="$lend" 'NR >= a && NR <= b' $vfldfile > $TMPDIR/tempEXP_${i}_$DATE$HH
+        #  done
+        #else 
+        #  echo "no temp data in this VFLD file"
+        #fi
       #Call the python script to convert SYNOP data for this hour  
       if [ $cverif == True ]; then
        echo "Conversion to verif format"
-       $py36 $BINDIR/vobs2verif.py -v 'TT' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
-       $py36 $BINDIR/vobs2verif.py -v 'FF' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH
+       $py36 $BINDIR/vobs2verif.py -v 'TT' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH -ini $FINI
+       $py36 $BINDIR/vobs2verif.py -v 'FF' -vvobs $TMPDIR/synopOBSVars_$DATE$HH -vexp $TMPDIR/synopEXPVars_$DATE$HH -ini $FINI
        #Delete the directories no longer needed for this date
        rm -rf $TMPDIR # $WRKDIR/data_${DATE}??
       elif [ $rvfld == True ]; then
@@ -204,7 +216,7 @@ for year in ${years[*]}; do
         echo "NSYNOP after reduction: $num_synop"
         rm -rf $TMPDIR # $WRKDIR/data_${DATE}??
        else
-           echo "only splitting files"
+           echo "only splitting VOBS and VFLD files"
       fi
 
       done # hour loop
@@ -215,4 +227,4 @@ for year in ${years[*]}; do
   done #days
   done #months
   done #year
-  
+ done #FINI 

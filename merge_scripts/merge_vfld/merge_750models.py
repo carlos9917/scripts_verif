@@ -28,20 +28,22 @@ import csv
 import subprocess
 import re
 
-def get_synop_vars(fileVars):
+def get_synop_vars(ifile):
     #Read this file to determine number of variables in file:
     first_two=[]
-    with open(fileVars) as f:
+    with open(ifile) as f:
         first_two.extend(str(f.readline()).rstrip() for i in range(2))
     nsynop_vars=int(first_two[-1]) # number of variables in synop data
     ntemp_stations=int(first_two[-1]) # number of temp stations in file
     nsynop_stations,ntemp_stations,ver_file =  first_two[0].split() # number of synop stations in file
-    import pdb
-    pdb.set_trace()
+    nsynop_stations=int(nsynop_stations)
+    ntemp_stations = int(ntemp_stations)
+
     lines_header =[]
-    with open(fileVars) as f:
+    with open(ifile) as f:
             lines_header.extend(f.readline().rstrip() for i in range(nsynop_vars+2))
-    vars_synop=[i.split(' ')[0] for i in lines_header[2:]]
+    lines_clean =  [re.sub('\s+',' ',i).strip() for i in lines_header]        
+    vars_synop=[i.split(' ')[0] for i in lines_clean[2:]]
     if 'FI' in vars_synop:
         colnames= ['stationId','lat','lon'] + vars_synop
         start_col_replace = 3
@@ -49,7 +51,7 @@ def get_synop_vars(fileVars):
         colnames=['stationId','lat','lon','HH'] + vars_synop
         start_col_replace = 4
     ignore_rows = 2 + nsynop_vars # number of rows to ignore before reading the actual synop data
-    return colnames, start_col_replace, ignore_rows
+    return colnames, nsynop_stations, ignore_rows, ntemp_stations #, nstastion#start_col_replace, ignore_rows
 def locate_files(models,period,finit,flen):
     #locate the files to process from each model.
     #period = YYYYMMDD_beg-YYYYMMDD_end
@@ -93,23 +95,36 @@ def locate_files(models,period,finit,flen):
                         
     return ifiles_model    
 
-def split_data(model,input_file)
+def split_data(model,ifile):
     '''
     Split the data files into SYNOP and TEMP data
     '''
     data_synop=OrderedDict()
-    header_synop=OrderedDict()
+    cols_temp = ['PP','FI','TT','RH','DD','FF','QQ','TD']
+    #header_synop=OrderedDict()
     data_temp=OrderedDict()
     header_temp=OrderedDict()
     #for model in models:
     #for ifile in input_files[model]:
     if ifile != 'None':
         #read two first lines of data file:
-        colnames,start_col_replace,ignore_rows=get_synop_vars(ifile)
+        #colnames,start_col_replace,ignore_rows=get_synop_vars(ifile)
+        colnames, nsynop_stations, ignore_rows, ntemp_stations = get_synop_vars(ifile)
         data_synop[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str,skiprows=ignore_rows)
         data_synop[model].columns=colnames
+        start_temp=ignore_rows+data_synop[model].shape[0]+12
+        skip_temp=start_temp
+        temp_data={}
+        for station in ntemp_stations:
+            header_temp[model] =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
+                                  dtype=int,skiprows=start_temp
+            data_temp[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
+                                dtype=str,skiprows=start_temp+1)
+            start_temp+=12 #jump over the next set of data
+
+        import pdb
+        pdb.set_trace()
         #
-        for 
         data_temp[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str,skiprows=ignore_rows)
     else:
         data_synop=[model]='None'
@@ -123,23 +138,24 @@ def combine_nonoverlapping(input_files):
     nsynop_total=0
     ntemp_total=0
     for model in input_files.keys():
-        for ifile in input_files[model]
+        for ifile in input_files[model]:
         #read the synop data:.
         #model=re.search('vfld(.*)20', ifileData).group(1)
-        data=split_data(model, input_file)
-        data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
-        ifileVars = ifileData.replace('Data','Vars')
-        colnames, col_start= get_vars(ifileVars)
-        data.columns=colnames
-        models_data[model] =  data #save data in dict
-        #read the first line to determine the variables inside
-        with open(ifileVars) as f:
-            first_line = f.readline()
-        first_line=first_line.rstrip('\n')    
-        header_line=first_line.split()
-        nsynop=int(header_line[0]) #number of synop stations
-        ntemp=int(header_line[1]) #number of temp stations
-        print("Number of nsynop and ntemp stations in %s file: %d, %d"%(ifile,nsynop,ntemp))
+            data=split_data(model, ifile)
+            data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
+
+        #ifileVars = ifileData.replace('Data','Vars')
+        #colnames, col_start= get_vars(ifileVars)
+        #data.columns=colnames
+        #models_data[model] =  data #save data in dict
+        ##read the first line to determine the variables inside
+        #with open(ifileVars) as f:
+        #    first_line = f.readline()
+        #first_line=first_line.rstrip('\n')    
+        #header_line=first_line.split()
+        #nsynop=int(header_line[0]) #number of synop stations
+        #ntemp=int(header_line[1]) #number of temp stations
+        #print("Number of nsynop and ntemp stations in %s file: %d, %d"%(ifile,nsynop,ntemp))
 
 def writesynop_nonoverlapping(data):
     pass
@@ -223,7 +239,7 @@ def main(args):
         #writesynop_nonverlapping(data,header)
         #writetemp_nonoverlapping(ofile)
     elif args.overlapping == True:
-        #data,header = replace_overlapping(input_files)
+        data,header = replace_overlapping(input_files)
     else:
         print("-ov option must be True or False (default)")
         sys.exit()

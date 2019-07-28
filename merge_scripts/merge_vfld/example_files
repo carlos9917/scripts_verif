@@ -1,4 +1,4 @@
 /netapp/dmiusr/aldtst/vfld/sgl40h11/vfldsgl40h11201907150027
 /netapp/dmiusr/aldtst/vfld/igb40h11/vfldigb40h11201907150027
 
-/mnetapp/dmiusr/aldtst/vfld/tasii/vfldtasii201907150324  --> linked to /netapp/dmiusr/aldtst/vfld/tasii/vfldtasii201907150027
+/netapp/dmiusr/aldtst/vfld/tasii/vfldtasii201907150324  --> linked to vfldtasii201907150027

@@ -71,16 +71,16 @@ BINDIR=/home/cap/verify/scripts_verif
 #BINDIR=/data/cap/code_development_hpc/scripts_verif
 CYINT=24 # CHANGE, for example for EC9
 hour_ini=00 #use 2 digits for defining the Start and Lastob properly
-hour_end=23
+hour_end=51
 rvfld=True #CHANGE. if True, will reduce the file size. If False, it will only split the files
             # This last option is useful to examine the file contents.
 years=(2019) #(2017 2018)
-month=(05) # 02 03 04 05 06 07 08 09 10 11 12)#
-models=(nea40h11) # igb40h11)
+month=(05 06) # 02 03 04 05 06 07 08 09 10 11 12)#
+models=(igb40h11 sgl40h11) # igb40h11)
 #models=(EC9)
 init_hours=(00 06 12 18)
-stnlist=/home/cap/verify/scripts_verif/stngreenland.dat
-region=Greenland
+stnlist=/home/cap/verify/scripts_verif/stngreenland_bjarne.dat
+region=GreenlandBjarne
 
 
 for EXP in ${models[@]}; do

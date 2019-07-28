@@ -109,22 +109,24 @@ def split_data(model,input_file)
         data_synop[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str,skiprows=ignore_rows)
         data_synop[model].columns=colnames
         #
+        for 
         data_temp[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str,skiprows=ignore_rows)
     else:
         data_synop=[model]='None'
 
 
 
-def combine_nonoverlapping():
+def combine_nonoverlapping(input_files):
     #combine non-overlapping data. In this case
     #simply combine all the data in one file
     models_data=OrderedDict()
     nsynop_total=0
     ntemp_total=0
-    for ifileData in input_files:
+    for model in input_files.keys():
+        for ifile in input_files[model]
         #read the synop data:.
         #model=re.search('vfld(.*)20', ifileData).group(1)
-        data=split_data(model, input_files)
+        data=split_data(model, input_file)
         data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
         ifileVars = ifileData.replace('Data','Vars')
         colnames, col_start= get_vars(ifileVars)

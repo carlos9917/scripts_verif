@@ -28,6 +28,8 @@ import csv
 import subprocess
 import re
 
+datadir='/netapp/dmiusr/aldtst/vfld'
+
 def get_synop_vars(ifile):
     #Read this file to determine number of variables in file:
     first_two=[]
@@ -58,8 +60,8 @@ def locate_files(models,period,finit,flen):
     #period = YYYYMMDD_beg-YYYYMMDD_end
     #Shift the file name by -3 h if the model is tasii
     #tdate=datetime.datetime.strptime('2019081200','%Y%m%d%H')-datetime.timedelta(seconds=10800)
-    datadir='/netapp/dmiusr/aldtst/vfld'
-    datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
+    #datadir='/netapp/dmiusr/aldtst/vfld'
+    #datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
     date_ini=datetime.datetime.strptime(period[0],'%Y%m%d')
     date_end=datetime.datetime.strptime(period[1],'%Y%m%d')
     dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
@@ -101,10 +103,10 @@ def split_data(model,ifile):
     '''
     Split the data files into SYNOP and TEMP data
     '''
-    data_synop=OrderedDict()
+    data_synop= OrderedDict()
     cols_temp = ['PP','FI','TT','RH','DD','FF','QQ','TD']
     #header_synop=OrderedDict()
-    data_temp=OrderedDict()
+    data_temp= OrderedDict()
     header_temp=OrderedDict()
     #for model in models:
     #for ifile in input_files[model]:
@@ -120,7 +122,7 @@ def split_data(model,ifile):
         data_temp[model] =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
                                   dtype=str,skiprows=ignore_temp)
     else:
-        data_synop=[model] = 'None'
+        data_synop[model] = 'None'
         data_temp[model] = 'None'
 
     return data_synop, data_temp
@@ -132,17 +134,72 @@ def combine_nonoverlapping(input_files):
     models_data=OrderedDict()
     nsynop_total=0
     ntemp_total=0
-    pile_synop=[]
-    pile_temp=[]
-    for model in input_files.keys():
-        for ifile in input_files[model]:
-        #read the synop data:.
-        #model=re.search('vfld(.*)20', ifileData).group(1)
-            data_synop,data_temp=split_data(model, ifile)
-            pile_synop.append(data_synop)
-            pile_temp.append(data_temp)
-            import pdb
-            pdb.set_trace()
+    #for k,model in enumerate(input_files.keys()):
+        #pile_synop[model] = []
+    #all input files ordered by date.
+    #loop below assumes all files contain the same number of synop variables
+    #this should be the case for all models, since we are dealing with vfld
+    #and not vobs data
+    pile_synop=OrderedDict()
+    models=list(input_files.keys())
+    for k,ifile in enumerate(input_files[models[0]]): 
+        print("first file is model %s"%ifile)
+        data_synop,data_temp=split_data(models[0], ifile)
+        save_cols=list(data_synop[models[0]].keys())
+        #pile_synop[model].append(data_synop)
+        pile_synop[models[0]]=data_synop
+        save_synop=OrderedDict() #{}
+        save_temp=OrderedDict() #{}
+        nkeys=len(data_synop[models[0]].keys())
+        print("contains %d synop variables (includes lat,lon,stationid)"%nkeys)
+        print(data_synop[models[0]].keys())
+        for key in data_synop[models[0]].keys():
+            save_synop[key]=list(data_synop[models[0]][key])
+
+        for key in data_temp[models[0]].keys():
+            save_temp[key]=list(data_temp[models[0]][key])
+
+        df_synop=pd.DataFrame.from_dict(save_synop)
+        df_temp=pd.DataFrame.from_dict(save_temp)
+        for model in models[1:]:
+            print(model)
+            this_file=input_files[model][k]
+            #print(this_file)
+            if this_file != 'None':
+                save_file=this_file
+                save_model=model
+                print("Adding data from model %s"%(this_file))
+                data_synop,data_temp=split_data(model, this_file)
+                nkeys=len(data_synop[model].keys())
+                print("contains %d synop variables (includes lat,lon,stationid)"%nkeys)
+                print(data_synop[model].keys())
+                pile_synop[model]=data_synop
+                save_synop=OrderedDict() #{}
+                save_temp=OrderedDict() #{}
+                for key in data_synop[model].keys():
+                    save_synop[key]=list(data_synop[model][key])
+
+                for key in data_temp[model].keys():
+                    save_temp[key]=list(data_temp[model][key])
+
+                df_add=pd.DataFrame.from_dict(save_synop)
+                df_synop = df_synop.append(df_add)
+                df_add=pd.DataFrame.from_dict(save_temp)
+                df_temp = df_temp.append(df_add)
+
+        #df_synop = df_synop.reset_index(drop=True) 
+        df_temp = df_temp.reset_index(drop=True)    
+        outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld'
+        ofile=os.path.split(save_file)[-1].replace(save_model,'gl750')
+        ofile=os.path.join(outdir,ofile)
+        df_synop.fillna('-9999999999',inplace=True)
+        #df_temp.fillna('-9999999999',inplace=True)
+        df_temp=df_temp.replace('None','') #,regex=True)
+        df_synop.to_csv(ofile,sep=' ',header=False,index=False,columns=save_cols)
+        df_temp.to_csv(ofile,sep=' ',mode='a',header=False,index=False,na_rep='-9999999999')
+        import pdb
+        pdb.set_trace()
+
             #data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
 
         #ifileVars = ifileData.replace('Data','Vars')
@@ -218,7 +275,7 @@ def writetemp_nonoverlapping(data,ofile):
             f.write(lines_read)
 
 def main(args):
-    datadir='/netapp/dmiusr/aldtst/vfld'
+    #datadir='/netapp/dmiusr/aldtst/vfld'
     #files750 = args.files750_synop
     models750= args.models750
     input_models = models750.split(',')

@@ -52,12 +52,14 @@ def get_synop_vars(ifile):
         start_col_replace = 4
     ignore_rows = 2 + nsynop_vars # number of rows to ignore before reading the actual synop data
     return colnames, nsynop_stations, ignore_rows, ntemp_stations #, nstastion#start_col_replace, ignore_rows
+
 def locate_files(models,period,finit,flen):
     #locate the files to process from each model.
     #period = YYYYMMDD_beg-YYYYMMDD_end
     #Shift the file name by -3 h if the model is tasii
     #tdate=datetime.datetime.strptime('2019081200','%Y%m%d%H')-datetime.timedelta(seconds=10800)
     datadir='/netapp/dmiusr/aldtst/vfld'
+    datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
     date_ini=datetime.datetime.strptime(period[0],'%Y%m%d')
     date_end=datetime.datetime.strptime(period[1],'%Y%m%d')
     dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
@@ -110,25 +112,18 @@ def split_data(model,ifile):
         #read two first lines of data file:
         #colnames,start_col_replace,ignore_rows=get_synop_vars(ifile)
         colnames, nsynop_stations, ignore_rows, ntemp_stations = get_synop_vars(ifile)
-        data_synop[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str,skiprows=ignore_rows)
+        data_synop[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
+                dtype=str,skiprows=ignore_rows,nrows=nsynop_stations)
         data_synop[model].columns=colnames
-        start_temp=ignore_rows+data_synop[model].shape[0]+12
-        skip_temp=start_temp
-        temp_data={}
-        for station in ntemp_stations:
-            header_temp[model] =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
-                                  dtype=int,skiprows=start_temp
-            data_temp[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
-                                dtype=str,skiprows=start_temp+1)
-            start_temp+=12 #jump over the next set of data
 
-        import pdb
-        pdb.set_trace()
-        #
-        data_temp[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str,skiprows=ignore_rows)
+        ignore_temp=ignore_rows+data_synop[model].shape[0]+10
+        data_temp[model] =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
+                                  dtype=str,skiprows=ignore_temp)
     else:
-        data_synop=[model]='None'
+        data_synop=[model] = 'None'
+        data_temp[model] = 'None'
 
+    return data_synop, data_temp
 
 
 def combine_nonoverlapping(input_files):
@@ -137,12 +132,18 @@ def combine_nonoverlapping(input_files):
     models_data=OrderedDict()
     nsynop_total=0
     ntemp_total=0
+    pile_synop=[]
+    pile_temp=[]
     for model in input_files.keys():
         for ifile in input_files[model]:
         #read the synop data:.
         #model=re.search('vfld(.*)20', ifileData).group(1)
-            data=split_data(model, ifile)
-            data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
+            data_synop,data_temp=split_data(model, ifile)
+            pile_synop.append(data_synop)
+            pile_temp.append(data_temp)
+            import pdb
+            pdb.set_trace()
+            #data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
 
         #ifileVars = ifileData.replace('Data','Vars')
         #colnames, col_start= get_vars(ifileVars)

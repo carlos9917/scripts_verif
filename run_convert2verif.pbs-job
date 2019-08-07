@@ -18,6 +18,6 @@ ulimit -S -m unlimited || ulimit -m
 ulimit -S -d unlimited || ulimit -d
 
 WRKDIR=/home/cap/verify/scripts_verif
-bash $WRKDIR/splitvfld_all.sh >& $WRKDIR/salida_all
+#bash $WRKDIR/splitvfld_all.sh >& $WRKDIR/salida_all
 #bash $WRKDIR/splitvobs.sh >& $WRKDIR/salida_split
-#bash $WRKDIR/reducevobs2.sh >& $WRKDIR/salida_vobs2
+bash $WRKDIR/reducevobs.sh >& $WRKDIR/salida_vobs

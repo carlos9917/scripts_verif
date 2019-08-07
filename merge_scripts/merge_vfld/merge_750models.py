@@ -46,6 +46,7 @@ def get_synop_vars(ifile):
             lines_header.extend(f.readline().rstrip() for i in range(nsynop_vars+2))
     lines_clean =  [re.sub('\s+',' ',i).strip() for i in lines_header]        
     vars_synop=[i.split(' ')[0] for i in lines_clean[2:]]
+    accum_synop=[i.split(' ')[1] for i in lines_clean[2:]] #accumulation times. Needed to write the data at the end
     if 'FI' in vars_synop:
         colnames= ['stationId','lat','lon'] + vars_synop
         start_col_replace = 3
@@ -53,7 +54,7 @@ def get_synop_vars(ifile):
         colnames=['stationId','lat','lon','HH'] + vars_synop
         start_col_replace = 4
     ignore_rows = 2 + nsynop_vars # number of rows to ignore before reading the actual synop data
-    return colnames, nsynop_stations, ignore_rows, ntemp_stations #, nstastion#start_col_replace, ignore_rows
+    return colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop
 
 def locate_files(models,period,finit,flen):
     #locate the files to process from each model.
@@ -111,9 +112,7 @@ def split_data(model,ifile):
     #for model in models:
     #for ifile in input_files[model]:
     if ifile != 'None':
-        #read two first lines of data file:
-        #colnames,start_col_replace,ignore_rows=get_synop_vars(ifile)
-        colnames, nsynop_stations, ignore_rows, ntemp_stations = get_synop_vars(ifile)
+        colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop = get_synop_vars(ifile)
         data_synop[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
                 dtype=str,skiprows=ignore_rows,nrows=nsynop_stations)
         data_synop[model].columns=colnames
@@ -125,7 +124,7 @@ def split_data(model,ifile):
         data_synop[model] = 'None'
         data_temp[model] = 'None'
 
-    return data_synop, data_temp
+    return data_synop, data_temp, accum_synop
 
 
 def combine_nonoverlapping(input_files):
@@ -143,24 +142,32 @@ def combine_nonoverlapping(input_files):
     pile_synop=OrderedDict()
     models=list(input_files.keys())
     for k,ifile in enumerate(input_files[models[0]]): 
-        print("first file is model %s"%ifile)
-        data_synop,data_temp=split_data(models[0], ifile)
-        save_cols=list(data_synop[models[0]].keys())
-        #pile_synop[model].append(data_synop)
-        pile_synop[models[0]]=data_synop
-        save_synop=OrderedDict() #{}
-        save_temp=OrderedDict() #{}
-        nkeys=len(data_synop[models[0]].keys())
-        print("contains %d synop variables (includes lat,lon,stationid)"%nkeys)
-        print(data_synop[models[0]].keys())
-        for key in data_synop[models[0]].keys():
-            save_synop[key]=list(data_synop[models[0]][key])
+        if ifile != 'None':
+            print("first model data exists: %s"%ifile)
+            data_synop,data_temp,accum_synop=split_data(models[0], ifile)
+            
+            save_cols=list(data_synop[models[0]].keys())
+            #pile_synop[model].append(data_synop)
+            pile_synop[models[0]]=data_synop
+            save_synop=OrderedDict() #{}
+            save_temp=OrderedDict() #{}
+            nkeys=len(data_synop[models[0]].keys())
+            print("contains %d synop variables (includes lat,lon,stationid)"%nkeys)
+            print(data_synop[models[0]].keys())
+            for key in data_synop[models[0]].keys():
+                save_synop[key]=list(data_synop[models[0]][key])
 
-        for key in data_temp[models[0]].keys():
-            save_temp[key]=list(data_temp[models[0]][key])
+            for key in data_temp[models[0]].keys():
+                save_temp[key]=list(data_temp[models[0]][key])
 
-        df_synop=pd.DataFrame.from_dict(save_synop)
-        df_temp=pd.DataFrame.from_dict(save_temp)
+            df_synop=pd.DataFrame.from_dict(save_synop)
+            df_temp=pd.DataFrame.from_dict(save_temp)
+        else:
+            print("Data for model %s  not available"%models[0])
+            df_synop=pd.DataFrame()
+            df_temp=pd.DataFrame()
+            accum_synop=None
+
         for model in models[1:]:
             print(model)
             this_file=input_files[model][k]
@@ -169,7 +176,8 @@ def combine_nonoverlapping(input_files):
                 save_file=this_file
                 save_model=model
                 print("Adding data from model %s"%(this_file))
-                data_synop,data_temp=split_data(model, this_file)
+                #ignore accum times for this set now, since I stored them above
+                data_synop,data_temp,stuff=split_data(model, this_file)
                 nkeys=len(data_synop[model].keys())
                 print("contains %d synop variables (includes lat,lon,stationid)"%nkeys)
                 print(data_synop[model].keys())
@@ -187,18 +195,24 @@ def combine_nonoverlapping(input_files):
                 df_add=pd.DataFrame.from_dict(save_temp)
                 df_temp = df_temp.append(df_add)
 
-        #df_synop = df_synop.reset_index(drop=True) 
-        df_temp = df_temp.reset_index(drop=True)    
-        outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld'
-        ofile=os.path.split(save_file)[-1].replace(save_model,'gl750')
-        ofile=os.path.join(outdir,ofile)
-        df_synop.fillna('-9999999999',inplace=True)
-        #df_temp.fillna('-9999999999',inplace=True)
-        df_temp=df_temp.replace('None','') #,regex=True)
-        df_synop.to_csv(ofile,sep=' ',header=False,index=False,columns=save_cols)
-        df_temp.to_csv(ofile,sep=' ',mode='a',header=False,index=False,na_rep='-9999999999')
-        import pdb
-        pdb.set_trace()
+        if (not df_temp.empty) and (not df_synop.empty):
+            print("Writing data for this date")
+            df_synop = df_synop.reset_index(drop=True) 
+            df_temp = df_temp.reset_index(drop=True)    
+            outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld'
+            ofile=os.path.split(save_file)[-1].replace(save_model,'gl750')
+            ofile=os.path.join(outdir,ofile)
+            df_synop.fillna('-9999999999',inplace=True)
+            #df_temp.fillna('-9999999999',inplace=True)
+            df_temp=df_temp.replace('None','') #,regex=True)
+            df_synop.to_csv(ofile,sep=' ',header=False,index=False,columns=save_cols)
+
+            #now add the header for the synop data:
+            vars_synop=df_synop.columns
+
+            df_temp.to_csv(ofile,sep=' ',mode='a',header=False,index=False,na_rep='-9999999999')
+            import pdb
+            pdb.set_trace()
 
             #data =  pd.read_csv(ifileData,sep=r"\s+",engine='python',header=None,index_col=None,dtype=str)
 

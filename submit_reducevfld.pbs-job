@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -v OMP_NUM_THREADS=1
+#PBS -N conv2verif
+#PBS -l pvmem=20gb
+#PBS -o /data/cap/scripts
+#PBS -j oe -W umask=022
+#PBS -q gpc
+#PBS -V
+#PBS -l walltime=24:00:00
+#PBS -N tasii
+
+export MPPEXEC=""
+export MPPGL=""
+export NPOOLS=1
+export NPROC=1
+ulimit -S -s unlimited || ulimit -s
+ulimit -S -m unlimited || ulimit -m
+ulimit -S -d unlimited || ulimit -d
+
+WRKDIR=/home/cap/verify/scripts_verif
+bash $WRKDIR/reducesize_vfld.sh >& $WRKDIR/salida_tasii
+#bash $WRKDIR/splitvobs.sh >& $WRKDIR/salida_split
+#bash $WRKDIR/reducevobs2.sh >& $WRKDIR/salida_vobs2

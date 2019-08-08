@@ -17,7 +17,6 @@ import csv
 import subprocess
 import re
 
-#datadir='/netapp/dmiusr/aldtst/vfld'
 
 class vfld_lite(object):
     def __init__(self,  model=None, period=None, finit=None,
@@ -165,14 +164,37 @@ if __name__ == '__main__':
     #for model in ['tasii','sgl40h11']:
     #    models.append(
     model='tasii'
-    period='20190601-20190602'
+    period='20190601-20190630'
     finit='00,06,12,18'
     flen=52
-    datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
+    #datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
+    datadir='/netapp/dmiusr/aldtst/vfld'
     tasii = vfld_lite(model=model, period=period, finit=finit, flen=52, datadir=datadir)
-    #ifiles=tasii.locate_files(model=model,period=period,finit=finit,flen=flen)
-    #for ifile in ifiles:
-    #    data_synop, data_temp, accum_synop = tasii.split_data(model,ifile)
-    import pdb
-    pdb.set_trace()
+    sgl40h11 = vfld_lite(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    nuuk750 = vfld_lite(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
+    qaan40h11 = vfld_lite(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    models=[tasii, sgl40h11, nuuk750, qaan40h11]
+    date=tasii.dates[0]
+    print("data contents for %s"%date)
+    print("tasii")
+    print(tasii.data_synop[date])
+    print("sgl")
+    print(sgl40h11.data_synop[date])
+    print("nuuk")
+    print(nuuk750.data_synop[date])
+    print("qaan")
+    print(qaan40h11.data_synop[date])
+    print("merge synop data from all stations")
+    frames = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
+    print("frames active ")
+    print([f.model for f in frames])
+    if tasii.dates[0] == sgl40h11.dates[0] == nuuk750.dates[0] == qaan40h11.dates[0]:
+        dfs=[f.data_synop[date] for f in frames]
+        print("frames to concatenate")
+        print(dfs[0])
+        print(dfs[1])
+        print(dfs[2])
+        df_row = pd.concat(dfs)
+    print("result")
+    print(df_row)
 

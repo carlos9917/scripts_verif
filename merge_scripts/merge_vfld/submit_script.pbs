@@ -16,5 +16,15 @@ ulimit -S -s unlimited || ulimit -s
 ulimit -S -m unlimited || ulimit -m
 ulimit -S -d unlimited || ulimit -d
 
-WRKDIR=/data/cap/merge_upscale/mergevfld_750_models
-/bin/bash -l $WRKDIR/run_merge750_IGB.sh >& $WRKDIR/salida
+#WRKDIR=/data/cap/merge_upscale/mergevfld_750_models
+#/bin/bash -l $WRKDIR/run_merge750_IGB.sh >& $WRKDIR/salida
+
+#using my conda installation:
+WRKDIR=/home/cap/verify/scripts_verif/merge_scripts/merge_vfld
+export PATH=/data/cap/miniconda2/bin:$PATH
+source activate py37
+#which python
+py36=/data/cap/miniconda2/envs/py37/bin/python
+$py36 $WRKDIR/vfld_lite.py >& $WRKDIR/test_vfld.txt
+
+

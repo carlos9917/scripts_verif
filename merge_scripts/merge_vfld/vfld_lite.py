@@ -17,17 +17,61 @@ import csv
 import subprocess
 import re
 
-datadir='/netapp/dmiusr/aldtst/vfld'
+#datadir='/netapp/dmiusr/aldtst/vfld'
 
 class vfld_lite(object):
     def __init__(self,  model=None, period=None, finit=None,
-                 flen=None, searchdir=None):
+                 flen=None, datadir=None):
         self.model = model
         self.period = period.split('-')
         self.finit=finit.split(',')
         self.flen= flen
         self.fhours = list(range(0,flen))
-    def locate_files(self,model,period,finit,flen):
+        self.datadir=datadir
+        ifiles_model,dates_model = self._locate_files(self.model,self.period,self.finit,self.flen)
+        self.ifiles_model=ifiles_model
+        self.dates = dates_model
+        #self.dates=self._get_dates_from_files(self.ifiles_model)
+        data_synop, data_temp, accum_synop = self._get_data(self.ifiles_model)
+        self.data_synop = data_synop
+        self.data_temp = data_temp
+        self.temp_stations = self._get_temp_station_list(self.data_temp)
+        self.accum_synop = accum_synop
+
+    def _get_temp_station_list(self,data_temp):
+        ''' Extract the temp stations from the first row of data,
+            which contains stationId lat lon height
+        '''
+        tempStations=OrderedDict()
+        for date in data_temp.keys():
+            if isinstance(data_temp[date], pd.DataFrame):
+                tempStations[date] = [data_temp[date].iloc[0][0],data_temp[date].iloc[0][1],
+                                      data_temp[date].iloc[0][2], data_temp[date].iloc[0][3]]
+            else:
+                tempStations[date] = [np.nan,np.nan,np.nan,np.nan]
+        return tempStations
+
+    def _get_data(self,ifiles):
+        data_synop=OrderedDict()
+        data_temp=OrderedDict()
+        accum_synop =OrderedDict()
+        for i,ifile in enumerate(ifiles):
+            date=self.dates[i]
+            data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile,date)
+            
+        return data_synop, data_temp, accum_synop
+
+    def _get_dates_from_files(self,ifiles):
+        dates=[]
+        for ifile in ifiles:
+            if 'None' not in ifile:
+                stuff,date=ifile.split('vfld'+self.model)
+                dates.append(date)
+            else:
+                dates.append('None')
+        return dates
+
+    def _locate_files(self,model,period,finit,flen):
         #locate the files to process from each model.
         #period = YYYYMMDD_beg-YYYYMMDD_end
         #Shift the file name by -3 h if the model is tasii
@@ -36,10 +80,12 @@ class vfld_lite(object):
         dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
         model_dates=[datetime.datetime.strftime(date,'%Y%m%d') for date in dates]
         ifiles_model = []
+        dtgs=[]
 
         for date in model_dates:
-            for init_hour in finit:
+            for init_hour in self.finit:
                 for hour in range(0,flen):
+                    dtgs.append(''.join([date,init_hour,str(hour).zfill(2)]))
                     if model != 'tasii':
                         fname=''.join(['vfld',model,date,init_hour,str(hour).zfill(2)])
                         fdir='/'.join([datadir,model])
@@ -62,7 +108,7 @@ class vfld_lite(object):
                     else:
                         print("model %s not in in the data directory!"%model) 
                         
-        return ifiles_model    
+        return ifiles_model, dtgs
 
     def _get_synop_vars(self,ifile):
         #Read this file to determine number of variables in file:
@@ -90,34 +136,43 @@ class vfld_lite(object):
         ignore_rows = 2 + nsynop_vars # number of rows to ignore before reading the actual synop data
         return colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop
 
-    def split_data(model,ifile):
+    def _split_data(self,ifile,date):
         '''
         Split the data files into SYNOP and TEMP data
         '''
-        data_synop= OrderedDict()
+        #data_synop= OrderedDict()
         cols_temp = ['PP','FI','TT','RH','DD','FF','QQ','TD']
-        #header_synop=OrderedDict()
-        data_temp= OrderedDict()
+        #data_temp= OrderedDict()
         header_temp=OrderedDict()
-        #for model in models:
-        #for ifile in input_files[model]:
         if ifile != 'None':
-            colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop = _get_synop_vars(ifile)
-            data_synop[model] = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
+            colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop = self._get_synop_vars(ifile)
+            data_synop = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
                     dtype=str,skiprows=ignore_rows,nrows=nsynop_stations)
-            data_synop[model].columns=colnames
+            data_synop.columns=colnames
     
-            ignore_temp=ignore_rows+data_synop[model].shape[0]+10
-            data_temp[model] =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
+            ignore_temp=ignore_rows+data_synop.shape[0]+10
+            data_temp =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
                                       dtype=str,skiprows=ignore_temp)
         else:
-            data_synop[model] = 'None'
-            data_temp[model] = 'None'
+            data_synop = 'None'
+            data_temp = 'None'
+            accum_synop = 'None'
     
         return data_synop, data_temp, accum_synop
 
 if __name__ == '__main__':
     models=[]
-    for model in ['tasii','sgl40h11']:
-        models.append(
+    #for model in ['tasii','sgl40h11']:
+    #    models.append(
+    model='tasii'
+    period='20190601-20190602'
+    finit='00,06,12,18'
+    flen=52
+    datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
+    tasii = vfld_lite(model=model, period=period, finit=finit, flen=52, datadir=datadir)
+    #ifiles=tasii.locate_files(model=model,period=period,finit=finit,flen=flen)
+    #for ifile in ifiles:
+    #    data_synop, data_temp, accum_synop = tasii.split_data(model,ifile)
+    import pdb
+    pdb.set_trace()
 

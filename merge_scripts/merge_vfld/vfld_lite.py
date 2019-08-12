@@ -159,22 +159,23 @@ class vfld_lite(object):
     
         return data_synop, data_temp, accum_synop
 
-class  monitor_format(object):
+class  monitor(object):
     '''
         Take dataframe with vfld data and format the
         rows and columns to write the whole thing to 
         a standard vfld ascii file that monitor can read
     '''
 
-    def __init__(self, model=None, df_synop=None, df_temp=None, outdir=None):
+    def __init__(self, model=None, date=None,df_synop=None, df_temp=None, outdir=None):
         self.model = model #model to name the vfld file
+        self.date=date
         self.df_synop = df_synop # pandas dataframe with synop data
         self.df_temp = df_temp # pandas dataframe with temp data
         self.outdir = outdir
         #self.date = date #date in format YYYYMMDDFINITHH
-        #selt.df_out = self._monitor_format(df)
+        self.df_out = self._format_data(df_synop,df_temp)
         
-    def _monitor_format(self,df_synop,df_temp):
+    def _format_data(self,df_synop,df_temp):
         '''
         Format the data to write in monitor vfld format.
         First create a dummy set of column names with the 
@@ -186,43 +187,48 @@ class  monitor_format(object):
         synopdata
         header temp
         temp data
-
         '''
         colst = df_temp.columns
         colss = df_synop.columns
-        #dummy_cols = [chr(i) for i in list(range(65,65+len(colss)+1))] #65 is A
         ns_synop = df_synop.shape[0]
         ns_temp = df_temp.shape[1]
         header_synop=[int(ns_synop), int(ns_temp), 4]
-        #varlist_temp='\n'.join(colst) # make this a 1 column with newlines
         df_out=pd.DataFrame(columns=colss) #dummy_cols) #
         if 'FI' in colss:
             nvars_synop = df_synop.shape[1]-3 # subtract stationId,lat,lon
-            #varlist_synop='\n'.join(colss[3:]) # make this a 1 column with newlinesüp
             varlist_synop=colss[3:]  
             nvars=len(colss[3:])
         else:
             nvars_synop = df_synop.shape[1]-4 #subtract stationId,lat,lon,hh
-            #varlist_synop='\n'.join(colss[4:]) # make this a 1 column with newlines
             varlist_synop=colss[4:]  
             nvars=len(colss[4:])
-        #header_synop=str(ns_synop)+str(ns_temp)+'4'
-        #for i,col in enumerate(colss):
-        #    df_out=df_out.append({dummy_cols[i]:col},ignore_index=True)
-        #df_out=df_out.append({'A':header_synop[0],'B':header_synop[1],'C':header_synop[2]},ignore_index=True)
         df_out=df_out.append({'stationId':header_synop[0],'lat':header_synop[1],'lon':header_synop[2]},ignore_index=True)
         df_out=df_out.append({'lat':nvars},ignore_index=True)
-        #df_out=df_out.append({'B':colss[1]},ignore_index=True)
-        #df_out=df_out.append({'C':colss[2]},ignore_index=True)
-        #for i,col in enumerate(dummy_cols[0:3]):
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        import pdb
-        pdb.set_trace()
+        df_out = df_out.append({'stationId':11},ignore_index=True) #11 pressure levels (constant)
+        df_out = df_out.append({'stationId':8},ignore_index=True) #8 variables for temp profiles (constant)
+        for var in colst:
+            df_out = df_out.append({'stationId':var},ignore_index=True)
+        fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
+        for i in enumerate(df_temp['PP'].values):
+            print(i[0])
+            collect_dict=OrderedDict()
+            for k,col in enumerate(colst):
+                collect_dict[fill_these[k]] = df_temp[col].values[i[0]]
+            df_out = df_out.append(collect_dict,ignore_index=True)
+     
+        #import pdb
+        #pdb.set_trace()
+        return df_out
+        #df_out = df_out.append(df_temp,ignore_index=True)    
 
-    def write_vfld():
-        pass
+
+    def write_vfld(self):
+        ofile=os.path.join(self.outdir,''.join([self.model,self.date]))
+        self.df_out.to_csv(ofile,sep=' ',header=False,index=False,na_rep='') #'-9999999999')
+
 
 if __name__ == '__main__':
     models=[]
@@ -264,10 +270,10 @@ if __name__ == '__main__':
     #print(dfs[2])
     df_synop = pd.concat(dfs,sort=False)
     df_temp = pd.concat(dft)
-    mon_save= monitor_format(model='gl', df_synop=df_synop,df_temp=df_temp,outdir=datadir)
-    check=mon_save._monitor_format(df_synop,df_temp)
-    import pdb
-    pdb.set_trace()
+    mon_save= monitor(model='gl',date=date,df_synop=df_synop,df_temp=df_temp,outdir=datadir)
+    mon_save.write_vfld()
+    #check=mon_save.write_vfld(df_synop,df_temp)
+
     #print("result")
     #print(df_row)
 

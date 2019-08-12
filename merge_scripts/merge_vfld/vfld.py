@@ -18,7 +18,7 @@ import subprocess
 import re
 
 
-class vfld_lite(object):
+class vfld(object):
     def __init__(self,  model=None, period=None, finit=None,
                  flen=None, datadir=None):
         self.model = model
@@ -213,16 +213,12 @@ class  monitor(object):
             df_out = df_out.append({'stationId':var},ignore_index=True)
         fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
         for i in enumerate(df_temp['PP'].values):
-            print(i[0])
             collect_dict=OrderedDict()
             for k,col in enumerate(colst):
                 collect_dict[fill_these[k]] = df_temp[col].values[i[0]]
             df_out = df_out.append(collect_dict,ignore_index=True)
      
-        #import pdb
-        #pdb.set_trace()
         return df_out
-        #df_out = df_out.append(df_temp,ignore_index=True)    
 
 
     def write_vfld(self):
@@ -232,48 +228,25 @@ class  monitor(object):
 
 if __name__ == '__main__':
     models=[]
-    #for model in ['tasii','sgl40h11']:
-    #    models.append(
     model='tasii'
     period='20190601-20190630'
     finit='00,06,12,18'
     flen=52
     datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
     #datadir='/netapp/dmiusr/aldtst/vfld'
-    tasii = vfld_lite(model=model, period=period, finit=finit, flen=52, datadir=datadir)
-    sgl40h11 = vfld_lite(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
-    #nuuk750 = vfld_lite(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
-    qaan40h11 = vfld_lite(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    tasii = vfld(model=model, period=period, finit=finit, flen=52, datadir=datadir)
+    sgl40h11 = vfld(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    #nuuk750 = vfld(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
+    qaan40h11 = vfld(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
     #models=[tasii, sgl40h11, nuuk750, qaan40h11]
     models=[tasii, sgl40h11, qaan40h11]
     date=tasii.dates[0]
-    #print("data contents for %s"%date)
-    #print("tasii")
-    #print(tasii.data_synop[date])
-    #print("sgl")
-    #print(sgl40h11.data_synop[date])
-    #print("nuuk")
-    #print(nuuk750.data_synop[date])
-    #print("qaan")
-    #print(qaan40h11.data_synop[date])
-    #print("merge synop data from all stations")
     frames_synop = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
     frames_temp = [f for f in models if isinstance(f.data_temp[date],pd.DataFrame)]
-    #print("frames active ")
-    #print([f.model for f in frames])
-    #if tasii.dates[0] == sgl40h11.dates[0] == nuuk750.dates[0] == qaan40h11.dates[0]:
     dfs=[f.data_synop[date] for f in frames_synop]
     dft=[f.data_temp[date] for f in frames_temp]
-    #print("frames to concatenate")
-    #print(dfs[0])
-    #print(dfs[1])
-    #print(dfs[2])
     df_synop = pd.concat(dfs,sort=False)
     df_temp = pd.concat(dft)
     mon_save= monitor(model='gl',date=date,df_synop=df_synop,df_temp=df_temp,outdir=datadir)
     mon_save.write_vfld()
-    #check=mon_save.write_vfld(df_synop,df_temp)
-
-    #print("result")
-    #print(df_row)
 

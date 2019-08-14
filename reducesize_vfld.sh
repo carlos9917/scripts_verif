@@ -12,7 +12,7 @@ days_in_month ()
     echo "Doing month $m"
     case $m in
       01|03|05|07|08|10|12)
-          days=(01) # 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
+          days=(01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31)
       ;;
       02)
          #Evaluation for leap years from https://bash.cyberciti.biz/time-and-date/find-whether-year-ls-leap-or-not/
@@ -50,13 +50,15 @@ hour_end=51
 rvfld=True #CHANGE. if True, will reduce the file size. If False, it will only split the files
             # This last option is useful to examine the file contents.
 years=(2019) #(2017 2018)
-month=(04 05 06 07) # 02 03 04 05 06 07 08 09 10 11 12)#
-models=(igb40h11)
+month=(04) # 02 03 04 05 06 07 08 09 10 11 12)#
+models=(nea40h11)
 #models=(EC9)
 init_hours=(00 06 12 18)
 #stnlist=/home/cap/verify/scripts_verif/stngreenland_bjarne.dat
-stnlist=/home/cap/verify/scripts_verif/stntasii.dat
-region=Greenland
+#stnlist=/home/cap/verify/scripts_verif/stntasii.dat
+#stnlist=/home/cap/verify/scripts_verif/stncoord.dat
+stnlist=/home/cap/verify/scripts_verif/stncoord_dk_monitor.dat
+region=monitor_selection_dk
 
 
 for EXP in ${models[@]}; do

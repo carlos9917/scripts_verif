@@ -7,7 +7,7 @@
 #PBS -q gpc
 #PBS -V
 #PBS -l walltime=24:00:00
-#PBS -N tasii
+#PBS -N dk_selection
 
 export MPPEXEC=""
 export MPPGL=""
@@ -18,6 +18,6 @@ ulimit -S -m unlimited || ulimit -m
 ulimit -S -d unlimited || ulimit -d
 
 WRKDIR=/home/cap/verify/scripts_verif
-bash $WRKDIR/reducesize_vfld.sh >& $WRKDIR/salida_tasii
+bash $WRKDIR/reducesize_vfld.sh >& $WRKDIR/salida_dk
 #bash $WRKDIR/splitvobs.sh >& $WRKDIR/salida_split
 #bash $WRKDIR/reducevobs2.sh >& $WRKDIR/salida_vobs2

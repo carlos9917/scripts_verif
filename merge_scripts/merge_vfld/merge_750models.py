@@ -27,27 +27,36 @@ from collections import OrderedDict
 import csv
 import subprocess
 import re
-from vfld_lite import vfld_lite as vfld
+from vfld import vfld as vf
+from vfld import vfld_monitor as monitor
 
 if __name__ == '__main__':
-    models=[]
     period='20190601-20190630'
     finit='00,06,12,18'
     flen=52
     datadir='/netapp/dmiusr/aldtst/vfld'
-    tasii = vfld(model='tasii', period=period, finit=finit, flen=52, datadir=datadir)
-    sgl40h11 = vfld(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
-    nuuk750 = vfld(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
-    qaan40h11 = vfld(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test'
+    tasii = vf(model='tasii', period=period, finit=finit, flen=52, datadir=datadir)
+    print("tasii done")
+    sgl40h11 = vf(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    print("sgl done")
+    nuuk750 = vf(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
+    print("nuuk done")
+    qaan40h11 = vf(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    print("qaan done")
     models=[tasii, sgl40h11, nuuk750, qaan40h11]
     print("merge synop data from all stations (non-overlapping assumed)")
-    for date in tasii.dates
+    for date in tasii.dates:
+        print("Merging date %s"%date)
         #Only collect those dates which contain any data:
-        frames = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
-        print("frames active ")
-        print([f.model for f in frames])
-        dfs=[f.data_synop[date] for f in frames]
-        df_row = pd.concat(dfs)
-        print("result")
-        print(df_row)
-        del df_row
+        frames_synop = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
+        frames_temp = [f for f in models if isinstance(f.data_temp[date],pd.DataFrame)]
+        dfs=[f.data_synop[date] for f in frames_synop]
+        dft=[f.data_temp[date] for f in frames_temp]
+        df_synop = pd.concat(dfs,sort=False)
+        df_temp = pd.concat(dft)
+        mon_save= monitor(model='gl',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
+        mon_save.write_vfld()
+        del df_synop
+        del df_temp
+        del mon_save

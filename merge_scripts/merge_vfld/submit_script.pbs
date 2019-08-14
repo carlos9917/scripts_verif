@@ -25,6 +25,6 @@ export PATH=/data/cap/miniconda2/bin:$PATH
 source activate py37
 #which python
 py36=/data/cap/miniconda2/envs/py37/bin/python
-$py36 $WRKDIR/vfld_lite.py >& $WRKDIR/test_vfld.txt
-
+#$py36 $WRKDIR/vfld_lite.py >& $WRKDIR/test_vfld.txt
+$py36 $WRKDIR/merge_750models.py >& $WRKDIR/test_vfld.txt
 

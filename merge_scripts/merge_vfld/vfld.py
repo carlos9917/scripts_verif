@@ -27,7 +27,7 @@ class vfld(object):
         self.flen= flen
         self.fhours = list(range(0,flen))
         self.datadir=datadir
-        ifiles_model,dates_model = self._locate_files(self.model,self.period,self.finit,self.flen)
+        ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.finit,self.flen)
         self.ifiles_model=ifiles_model
         self.dates = dates_model
         #self.dates=self._get_dates_from_files(self.ifiles_model)
@@ -70,7 +70,7 @@ class vfld(object):
                 dates.append('None')
         return dates
 
-    def _locate_files(self,model,period,finit,flen):
+    def _locate_files(self,datadir,model,period,finit,flen):
         #locate the files to process from each model.
         #period = YYYYMMDD_beg-YYYYMMDD_end
         #Shift the file name by -3 h if the model is tasii
@@ -159,7 +159,7 @@ class vfld(object):
     
         return data_synop, data_temp, accum_synop
 
-class  monitor(object):
+class vfld_monitor(object):
     '''
         Take dataframe with vfld data and format the
         rows and columns to write the whole thing to 
@@ -202,13 +202,14 @@ class  monitor(object):
             nvars_synop = df_synop.shape[1]-4 #subtract stationId,lat,lon,hh
             varlist_synop=colss[4:]  
             nvars=len(colss[4:])
+        #write first line of file:    
         df_out=df_out.append({'stationId':header_synop[0],'lat':header_synop[1],'lon':header_synop[2]},ignore_index=True)
         df_out=df_out.append({'lat':nvars},ignore_index=True)
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        df_out = df_out.append({'stationId':11},ignore_index=True) #11 pressure levels (constant)
-        df_out = df_out.append({'stationId':8},ignore_index=True) #8 variables for temp profiles (constant)
+        df_out = df_out.append({'stationId':int(11)},ignore_index=True) #11 pressure levels (constant)
+        df_out = df_out.append({'stationId':int(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
@@ -247,6 +248,6 @@ if __name__ == '__main__':
     dft=[f.data_temp[date] for f in frames_temp]
     df_synop = pd.concat(dfs,sort=False)
     df_temp = pd.concat(dft)
-    mon_save= monitor(model='gl',date=date,df_synop=df_synop,df_temp=df_temp,outdir=datadir)
+    mon_save= vfld_monitor(model='gl',date=date,df_synop=df_synop,df_temp=df_temp,outdir=datadir)
     mon_save.write_vfld()
 

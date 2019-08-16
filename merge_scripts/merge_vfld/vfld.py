@@ -17,6 +17,8 @@ import csv
 import subprocess
 import re
 
+import logging
+logger = logging.getLogger(__name__)
 
 class vfld(object):
     def __init__(self,  model=None, period=None, finit=None,
@@ -41,6 +43,8 @@ class vfld(object):
         ''' Extract the temp stations from the first row of data,
             which contains stationId lat lon height
         '''
+        # check if temp data is actually there
+        #
         tempStations=OrderedDict()
         for date in data_temp.keys():
             if isinstance(data_temp[date], pd.DataFrame):
@@ -57,7 +61,14 @@ class vfld(object):
         for i,ifile in enumerate(ifiles):
             date=self.dates[i]
             data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile,date)
-            
+            # print a warning if synop data is not there:
+            # TODO: if no synop, don't include model!
+            if len(data_synop[date]) == 0:
+                print("WARNING: synop data for %s[%s] is empty!"%(self.model,date))
+                data_synop[date] = 'None'
+            if len(data_temp[date]) == 0:
+                print("WARNING: temp data for %s[%s] is empty!"%(self.model,date))
+                data_temp[date] = 'None'
         return data_synop, data_temp, accum_synop
 
     def _get_dates_from_files(self,ifiles):
@@ -104,8 +115,10 @@ class vfld(object):
                             ifiles_model.append(ifile)
                         else:
                             ifiles_model.append('None')
-                    else:
-                        print("model %s not in in the data directory!"%model) 
+        if len(ifiles_model) == 0:
+            print("WARNING: data not found for dates %s"%self.dates)
+        logger.debug("first file for model %s: %s"%(self.model,ifiles_model[0]))
+        logger.debug("last file for model %s: %s"%(self.model,ifiles_model[-1]))
                         
         return ifiles_model, dtgs
 
@@ -172,6 +185,7 @@ class vfld_monitor(object):
         self.df_synop = df_synop # pandas dataframe with synop data
         self.df_temp = df_temp # pandas dataframe with temp data
         self.outdir = outdir
+        self.synop_cols = self.df_synop.columns
         #self.date = date #date in format YYYYMMDDFINITHH
         self.df_out = self._format_data(df_synop,df_temp)
         
@@ -191,11 +205,17 @@ class vfld_monitor(object):
         colst = df_temp.columns
         colss = df_synop.columns
         ns_synop = df_synop.shape[0]
-        ns_temp = df_temp.shape[1]
-        header_synop=[int(ns_synop), int(ns_temp), 4]
-        df_out=pd.DataFrame(columns=colss) #dummy_cols) #
+        #to figure out the number of stations in the concat temp dataframe,
+        # get the rows with index == 0, since only on the first line of the 
+        # original temp dataframes this information existed
+        #ns_temp = df_temp.shape[1] WRONG!!!
+        ns_temp = len(df_temp[df_temp.index.values == 0])
+
+        #declaring these values for header as strings is the only way I can ensure these numbers are written as non-float
+        header_synop=[str(ns_synop), str(ns_temp), str(4)]
+        df_out=pd.DataFrame(columns=colss) 
         if 'FI' in colss:
-            nvars_synop = df_synop.shape[1]-3 # subtract stationId,lat,lon
+            nvars_synop = df_synop.shape[1]-3 # subtract: stationId,lat,lon
             varlist_synop=colss[3:]  
             nvars=len(colss[3:])
         else:
@@ -204,34 +224,43 @@ class vfld_monitor(object):
             nvars=len(colss[4:])
         #write first line of file:    
         df_out=df_out.append({'stationId':header_synop[0],'lat':header_synop[1],'lon':header_synop[2]},ignore_index=True)
-        df_out=df_out.append({'lat':nvars},ignore_index=True)
+        df_out=df_out.append({'lat':str(nvars)},ignore_index=True)
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        df_out = df_out.append({'stationId':int(11)},ignore_index=True) #11 pressure levels (constant)
-        df_out = df_out.append({'stationId':int(8)},ignore_index=True) #8 variables for temp profiles (constant)
+        df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
+        df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
+        fill_these = self.synop_cols[0:8]
+        #df_temp = df_temp.fillna(value=pd.np.nan, inplace=True) #get rid of None?
         for i in enumerate(df_temp['PP'].values):
             collect_dict=OrderedDict()
             for k,col in enumerate(colst):
                 collect_dict[fill_these[k]] = df_temp[col].values[i[0]]
+            #for col in self.synop_cols[8:]:
+            #    collect_dict[col] = ''   
             df_out = df_out.append(collect_dict,ignore_index=True)
-     
+        for col in df_out.columns:
+            df_out[col].replace('None', '', inplace=True)
         return df_out
 
 
     def write_vfld(self):
         ofile=os.path.join(self.outdir,''.join([self.model,self.date]))
+        #df_write=self.df_out
+        #df_write = df_write.fillna(value=pd.np.nan, inplace=True)
+        #df_write.to_csv(ofile,sep=' ',header=False,index=False,na_rep='') #'-9999999999')
         self.df_out.to_csv(ofile,sep=' ',header=False,index=False,na_rep='') #'-9999999999')
 
 
 if __name__ == '__main__':
     models=[]
     model='tasii'
-    period='20190601-20190630'
-    finit='00,06,12,18'
+    period='20190601-20190601'
+    #finit='00,06,12,18'
+    finit='00'
     flen=52
     datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
     #datadir='/netapp/dmiusr/aldtst/vfld'

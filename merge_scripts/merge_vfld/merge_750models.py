@@ -30,12 +30,46 @@ import re
 from vfld import vfld as vf
 from vfld import vfld_monitor as monitor
 
+def setup_logger(logFile,outScreen=False):
+    '''
+    Set up the logger output
+    '''
+    global logger
+    global fmt
+    global fname
+
+    logger = logging.getLogger(__name__)
+    fmt_debug = logging.Formatter('%(levelname)s:%(name)s %(message)s - %(asctime)s -  %(module)s.%(funcName)s:%(lineno)s')
+    fmt_default = logging.Formatter('%(levelname)-8s:  %(asctime)s -- %(name)s: %(message)s')
+    fmt = fmt_default
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    fname = logFile
+    fh = logging.FileHandler(fname, mode='w')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(fmt)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(fmt)
+
+    logger.addHandler(fh)
+    if outScreen:
+        logger.addHandler(ch) # Turn on to also log to screen
+
+
 if __name__ == '__main__':
-    period='20190601-20190630'
+    #NOTE: limit period to 1 month at a time.
+    # Otherwise the class will become huge!
+    # and the the processing time will increase exponentially.
+    period='20190301-20190331'
     finit='00,06,12,18'
     flen=52
     datadir='/netapp/dmiusr/aldtst/vfld'
     outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test'
+    logFile=os.path.join(outdir,'merge.log')
+    setup_logger(logFile,outScreen=False)
+
     tasii = vf(model='tasii', period=period, finit=finit, flen=52, datadir=datadir)
     print("tasii done")
     sgl40h11 = vf(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
@@ -50,6 +84,10 @@ if __name__ == '__main__':
         print("Merging date %s"%date)
         #Only collect those dates which contain any data:
         frames_synop = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
+        models_avail = [f.model for f in frames_synop]
+        print("Number of models with synop data for %s: %d \n"%(date,len(frames_synop)))
+        print("Available models")
+        print(models_avail)
         frames_temp = [f for f in models if isinstance(f.data_temp[date],pd.DataFrame)]
         dfs=[f.data_synop[date] for f in frames_synop]
         dft=[f.data_temp[date] for f in frames_temp]

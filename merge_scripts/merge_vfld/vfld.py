@@ -64,10 +64,10 @@ class vfld(object):
             # print a warning if synop data is not there:
             # TODO: if no synop, don't include model!
             if len(data_synop[date]) == 0:
-                print("WARNING: synop data for %s[%s] is empty!"%(self.model,date))
+                logger.info("WARNING: synop data for %s[%s] is empty!"%(self.model,date))
                 data_synop[date] = 'None'
             if len(data_temp[date]) == 0:
-                print("WARNING: temp data for %s[%s] is empty!"%(self.model,date))
+                logger.info("WARNING: temp data for %s[%s] is empty!"%(self.model,date))
                 data_temp[date] = 'None'
         return data_synop, data_temp, accum_synop
 
@@ -116,7 +116,7 @@ class vfld(object):
                         else:
                             ifiles_model.append('None')
         if len(ifiles_model) == 0:
-            print("WARNING: data not found for dates %s"%self.dates)
+            logger.info("WARNING: data not found for dates %s"%self.dates)
         logger.debug("first file for model %s: %s"%(self.model,ifiles_model[0]))
         logger.debug("last file for model %s: %s"%(self.model,ifiles_model[-1]))
                         
@@ -228,11 +228,13 @@ class vfld_monitor(object):
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
+        import pdb
+        pdb.set_trace()
         df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
         df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
             df_out = df_out.append({'stationId':var},ignore_index=True)
-        fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
+        #fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
         fill_these = self.synop_cols[0:8]
         #df_temp = df_temp.fillna(value=pd.np.nan, inplace=True) #get rid of None?
         for i in enumerate(df_temp['PP'].values):

@@ -30,6 +30,22 @@ import re
 from vfld import vfld as vf
 from vfld import vfld_monitor as monitor
 
+#this to avoid issues with plotting via qsub
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
+
+def check_plot(df,fout):
+    import seaborn as sns
+    dfp=df.astype(float)
+    #ax=dfp.plot(x='lon',y='lat',style='o')
+    sns_plot=sns.scatterplot(x="lon", y="lat", data=dfp)
+    #fig = ax.get_figure()
+    #fig.savefig(fout)
+    sns_plot.figure.savefig(fout)
+
+
 def setup_logger(logFile,outScreen=False):
     '''
     Set up the logger output
@@ -66,7 +82,7 @@ if __name__ == '__main__':
     finit='00,06,12,18'
     flen=52
     datadir='/netapp/dmiusr/aldtst/vfld'
-    outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test'
+    outdir='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test/gl'
     logFile=os.path.join(outdir,'merge.log')
     setup_logger(logFile,outScreen=False)
 
@@ -92,6 +108,10 @@ if __name__ == '__main__':
         dfs=[f.data_synop[date] for f in frames_synop]
         dft=[f.data_temp[date] for f in frames_temp]
         df_synop = pd.concat(dfs,sort=False)
+        fout=os.path.join(outdir,'synop_stations_'+date+'.png')
+        check_plot(df_synop,fout)
+        #fout=os.path.join(outdir,'synop_stations_'+date+'.txt')
+        #df_synop.to_csv(fout,columns=['stationId','lat','lon'],header=False,index=False,sep=' ')
         df_temp = pd.concat(dft)
         mon_save= monitor(model='gl',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
         mon_save.write_vfld()

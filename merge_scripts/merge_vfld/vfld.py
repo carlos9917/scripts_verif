@@ -228,8 +228,6 @@ class vfld_monitor(object):
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        import pdb
-        pdb.set_trace()
         df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
         df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
@@ -250,7 +248,7 @@ class vfld_monitor(object):
 
 
     def write_vfld(self):
-        ofile=os.path.join(self.outdir,''.join([self.model,self.date]))
+        ofile=os.path.join(self.outdir,''.join(['vfld',self.model,self.date]))
         #df_write=self.df_out
         #df_write = df_write.fillna(value=pd.np.nan, inplace=True)
         #df_write.to_csv(ofile,sep=' ',header=False,index=False,na_rep='') #'-9999999999')

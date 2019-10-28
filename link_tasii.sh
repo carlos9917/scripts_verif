@@ -34,8 +34,8 @@ VOBSDIR=/data/cap/VOBS
 CYINT=51 # CHANGE, for example for EC9
 hour_ini=00 #use 2 digits for defining the Start and Lastob properly
 hour_end=51
-years=(2019) #(2017 2018)
-month=(08) # 02 03 04 05 06 07 08 09 10 11 12)#
+years=(2018) #(2017 2018)
+month=(09 10 11 12) # 02 03 04 05 06 07 08 09 10 11 12)#
 models=(tasii) # igb40h11)
 #models=(EC9)
 init_hours=(00 06 12 18)
@@ -45,7 +45,8 @@ region=Greenland
 
 EXP='tasii'
 
-WRKDIR=/data/cap/vfld_reduced/$EXP
+#WRKDIR=/data/cap/vfld_reduced/$EXP
+WRKDIR=/data/cap/vfld_reduced/links_timeshifted_tasii/$EXP
 VFLDDIR=/data/xiaohua/vfld/$EXP
 mkdir -p $WRKDIR || exit
 echo "Making soft links pointing to the correct time shifted files for  $EXP"

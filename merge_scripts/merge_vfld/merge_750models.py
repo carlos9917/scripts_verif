@@ -78,7 +78,7 @@ if __name__ == '__main__':
     #NOTE: limit period to 1 month at a time.
     # Otherwise the class will become huge!
     # and the the processing time will increase exponentially.
-    period='20190301-20190331'
+    period='20190101-20190101'
     finit='00,06,12,18'
     flen=52
     datadir='/netapp/dmiusr/aldtst/vfld'

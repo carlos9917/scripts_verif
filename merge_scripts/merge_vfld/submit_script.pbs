@@ -23,5 +23,5 @@ source activate py37
 #which python
 py36=/data/cap/miniconda2/envs/py37/bin/python
 #$py36 $WRKDIR/vfld_lite.py >& $WRKDIR/test_vfld.txt
-$py36 $WRKDIR/merge_750models.py >& $WRKDIR/out_mar.txt
+$py36 $WRKDIR/merge_750models.py >& $WRKDIR/out_jan.txt
 

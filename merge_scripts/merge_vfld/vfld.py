@@ -25,7 +25,11 @@ class vfld(object):
                  flen=None, datadir=None):
         self.model = model
         self.period = period.split('-')
-        self.finit=finit.split(',')
+        self.finit = finit
+        if ',' in self.finit:
+            self.finit=finit.split(',')
+        else:
+            self.finit=[finit]
         self.flen= flen
         self.fhours = list(range(0,flen))
         self.datadir=datadir

@@ -1,4 +1,4 @@
-# Class that defines the vfld file of an Harmonie-lite model like:
+# Class that defines the vfld data from an Harmonie-lite model like:
 # /netapp/dmiusr/aldtst/vfld/tasii
 # /netapp/dmiusr/aldtst/vfld/sgl40h11
 # /netapp/dmiusr/aldtst/vfld/nuuk750
@@ -44,8 +44,9 @@ class vfld(object):
         self.accum_synop = accum_synop
 
     def _get_temp_station_list(self,data_temp):
-        ''' Extract the temp stations from the first row of data,
-            which contains stationId lat lon height
+        ''' Extract the temp stations from the first row of data
+            of the temp data section of the vfld file,
+            which contains: stationId lat lon height
         '''
         # check if temp data is actually there
         #
@@ -59,12 +60,15 @@ class vfld(object):
         return tempStations
 
     def _get_data(self,ifiles):
+        '''
+        Extract the data from all ifiles in a df for SYNOP and TEMP data
+        '''
         data_synop=OrderedDict()
         data_temp=OrderedDict()
         accum_synop =OrderedDict()
         for i,ifile in enumerate(ifiles):
             date=self.dates[i]
-            data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile,date)
+            data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile)
             # print a warning if synop data is not there:
             # TODO: if no synop, don't include model!
             if len(data_synop[date]) == 0:
@@ -75,20 +79,26 @@ class vfld(object):
                 data_temp[date] = 'None'
         return data_synop, data_temp, accum_synop
 
-    def _get_dates_from_files(self,ifiles):
-        dates=[]
-        for ifile in ifiles:
-            if 'None' not in ifile:
-                stuff,date=ifile.split('vfld'+self.model)
-                dates.append(date)
-            else:
-                dates.append('None')
-        return dates
+    #def _get_dates_from_files(self,ifiles):
+    #    '''
+    #    Extract dates from file names
+    #    '''
+    #    dates=[]
+    #    for ifile in ifiles:
+    #        if 'None' not in ifile:
+    #            stuff,date=ifile.split('vfld'+self.model)
+    #            dates.append(date)
+    #        else:
+    #            dates.append('None')
+    #    print("dates from files %s "%' '.join(dates))        
+    #    return dates
 
     def _locate_files(self,datadir,model,period,finit,flen):
-        #locate the files to process from each model.
-        #period = YYYYMMDD_beg-YYYYMMDD_end
-        #Shift the file name by -3 h if the model is tasii
+        '''
+        Locate the files to process from each model.
+        period = YYYYMMDD_beg-YYYYMMDD_end
+        Shift the file name by -3 h if the model is tasii
+        '''
         date_ini=datetime.datetime.strptime(period[0],'%Y%m%d')
         date_end=datetime.datetime.strptime(period[1],'%Y%m%d')
         dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
@@ -123,10 +133,12 @@ class vfld(object):
             logger.info("WARNING: data not found for dates %s"%self.dates)
         logger.debug("first file for model %s: %s"%(self.model,ifiles_model[0]))
         logger.debug("last file for model %s: %s"%(self.model,ifiles_model[-1]))
-                        
         return ifiles_model, dtgs
 
     def _get_synop_vars(self,ifile):
+        '''
+        Extract information about the SYNOP variables in vfld file
+        '''
         #Read this file to determine number of variables in file:
         first_two=[]
         with open(ifile) as f:
@@ -152,13 +164,12 @@ class vfld(object):
         ignore_rows = 2 + nsynop_vars # number of rows to ignore before reading the actual synop data
         return colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop
 
-    def _split_data(self,ifile,date):
+    def _split_data(self,ifile):
         '''
-        Split the data files into SYNOP and TEMP data
+        Split the data from ifile into SYNOP and TEMP
+        in two data frames
         '''
-        #data_synop= OrderedDict()
-        cols_temp = ['PP','FI','TT','RH','DD','FF','QQ','TD']
-        #data_temp= OrderedDict()
+        cols_temp = ['PP','FI','TT','RH','DD','FF','QQ','TD'] #this set of temp variables is constant
         header_temp=OrderedDict()
         if ifile != 'None':
             colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop = self._get_synop_vars(ifile)

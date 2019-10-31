@@ -151,7 +151,7 @@ if __name__ == '__main__':
         dft=[f.data_temp[date] for f in frames_temp]
         df_synop = pd.concat(dfs,sort=False)
         fout=os.path.join(outdir,'synop_stations_'+date+'.png')
-        check_plot(df_synop,fout)
+        #check_plot(df_synop,fout)
         #fout=os.path.join(outdir,'synop_stations_'+date+'.txt')
         #df_synop.to_csv(fout,columns=['stationId','lat','lon'],header=False,index=False,sep=' ')
         df_temp = pd.concat(dft)

@@ -223,8 +223,14 @@ class vfld_monitor(object):
         #to figure out the number of stations in the concat temp dataframe,
         # get the rows with index == 0, since only on the first line of the 
         # original temp dataframes this information existed
-        #ns_temp = df_temp.shape[1] WRONG!!!
-        ns_temp = len(df_temp[df_temp.index.values == 0])
+        # Each new set of data will start at 0. 
+        # NOTE: This seems to work only with non overlappping data sets!
+        #ns_temp = len(df_temp[df_temp.index.values == 0])
+
+        #alternative: since I read all in string format, only the 
+        #strings not containing a . will be station names in the PP column
+        temp_stations_PP=[st for st in df_temp['PP'].values if '.' not in st]
+        ns_temp = len(temp_stations_PP)
 
         #declaring these values for header as strings is the only way I can ensure these numbers are written as non-float
         header_synop=[str(ns_synop), str(ns_temp), str(4)]

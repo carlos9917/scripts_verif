@@ -38,15 +38,13 @@ def drop_duplicates(df_temp):
     repeated =[item for item, count in collections.Counter(temp_stations).items() if count > 1]
     print("before dropping ")
     print(df_temp.shape)
+    to_del=[]
     for st in repeated:
         check_ind=df_temp.loc[df_temp['PP']==st].index.tolist()
-        print(check_ind)
         for ch in check_ind[1:]: # keep only first 
-            print("del index %d"%ch)
-            df_temp.drop(df_temp.index[ch:ch+11],inplace=True)
-
-    import pdb
-    pdb.set_trace()
+            to_del = to_del + list(range(ch,ch+11))
+            #df_temp.drop(df_temp.index[ch:ch+11],inplace=True)
+    df_temp.drop(to_del,inplace=True)
     
 
 def test_duplicates(df,date,outdir):
@@ -173,8 +171,6 @@ if __name__ == '__main__':
             #check_plot(df_synop,fout) #for debugging
             df_temp = pd.concat(dft,ignore_index=True)
             drop_duplicates(df_temp)
-            #NOTE: temp data not being filtered. Station information is mixed in
-            # first column and not so easy to identify in this case!
             mon_save= monitor(model='carra',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
             mon_save.write_vfld()
             del df_synop

@@ -19,12 +19,35 @@ import subprocess
 import re
 from vfld import vfld as vf
 from vfld import vfld_monitor as monitor
+import collections
 
 #this to avoid issues with plotting via qsub
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
+def drop_duplicates(df_temp):
+    '''
+    Drop duplicate stations in the df_temp frame.
+    '''
+    #identify the station names
+    temp_stations=[st for st in df_temp['PP'].values if '.' not in st]
+    #idenfity the index of each station
+    temp_st_loc=[df_temp.loc[df_temp['PP']==st].index for st in df_temp['PP'] if '.' not in st]
+    #repeated stations:
+    repeated =[item for item, count in collections.Counter(temp_stations).items() if count > 1]
+    print("before dropping ")
+    print(df_temp.shape)
+    for st in repeated:
+        check_ind=df_temp.loc[df_temp['PP']==st].index.tolist()
+        print(check_ind)
+        for ch in check_ind[1:]: # keep only first 
+            print("del index %d"%ch)
+            df_temp.drop(df_temp.index[ch:ch+11],inplace=True)
+
+    import pdb
+    pdb.set_trace()
+    
 
 def test_duplicates(df,date,outdir):
     '''
@@ -148,9 +171,8 @@ if __name__ == '__main__':
             df_synop = df_synop.drop_duplicates(['stationId'],keep='last') #keeping NE 
             #fout=os.path.join(outdir,'synop_stations_'+date+'.png') #for debugging
             #check_plot(df_synop,fout) #for debugging
-            df_temp = pd.concat(dft)
-            import pdb
-            pdb.set_trace()
+            df_temp = pd.concat(dft,ignore_index=True)
+            drop_duplicates(df_temp)
             #NOTE: temp data not being filtered. Station information is mixed in
             # first column and not so easy to identify in this case!
             mon_save= monitor(model='carra',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)

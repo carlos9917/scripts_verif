@@ -20,7 +20,6 @@ import re
 from vfld import vfld as vf
 from vfld import vfld_monitor as monitor
 import collections
-
 #this to avoid issues with plotting via qsub
 import matplotlib as mpl
 mpl.use('Agg')
@@ -36,8 +35,8 @@ def drop_duplicates(df_temp):
     temp_st_loc=[df_temp.loc[df_temp['PP']==st].index for st in df_temp['PP'] if '.' not in st]
     #repeated stations:
     repeated =[item for item, count in collections.Counter(temp_stations).items() if count > 1]
-    print("before dropping ")
-    print(df_temp.shape)
+    #print("before dropping ")
+    #print(df_temp.shape)
     to_del=[]
     for st in repeated:
         check_ind=df_temp.loc[df_temp['PP']==st].index.tolist()
@@ -165,7 +164,7 @@ if __name__ == '__main__':
             dfs=[f.data_synop[date] for f in frames_synop]
             dft=[f.data_temp[date] for f in frames_temp]
             df_synop = pd.concat(dfs,sort=False)
-            test_duplicates(df_synop,date,outdir) #for debugging
+            #test_duplicates(df_synop,date,outdir) #for debugging
             df_synop = df_synop.drop_duplicates(['stationId'],keep='last') #keeping NE 
             #fout=os.path.join(outdir,'synop_stations_'+date+'.png') #for debugging
             #check_plot(df_synop,fout) #for debugging

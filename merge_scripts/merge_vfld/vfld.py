@@ -16,7 +16,7 @@ from collections import OrderedDict
 import csv
 import subprocess
 import re
-
+import csv
 import logging
 logger = logging.getLogger(__name__)
 
@@ -175,8 +175,13 @@ class vfld(object):
             colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop = self._get_synop_vars(ifile)
             data_synop = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
                     dtype=str,skiprows=ignore_rows,nrows=nsynop_stations)
-            data_synop.columns=colnames
-    
+            #NOTE: will name the columns as VariableName+AccumulationTime. To be split afterwards 
+            #when writing the data in vfld format for monitor in vfld_monitor
+            #data_synop.columns=colnames
+            if 'FI' in colnames:
+                data_synop.columns=colnames[0:3]+[' '.join(str(i) for i in col) for col in zip(colnames[3:],accum_synop)]
+            else:
+                data_synop.columns=colnames[0:4]+[' '.join(str(i) for i in col) for col in zip(colnames[4:],accum_synop)]
             ignore_temp=ignore_rows+data_synop.shape[0]+10
             data_temp =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
                                       dtype=str,skiprows=ignore_temp)
@@ -252,7 +257,7 @@ class vfld_monitor(object):
         df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
         df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
-            df_out = df_out.append({'stationId':var},ignore_index=True)
+            df_out = df_out.append({'stationId':var+' 0'},ignore_index=True) #include accumulation time for temp vars
         #fill_these = ['stationId', 'lat', 'lon', 'FI', 'NN', 'DD', 'FF', 'TT']
         fill_these = self.synop_cols[0:8]
         #df_temp = df_temp.fillna(value=pd.np.nan, inplace=True) #get rid of None?
@@ -273,7 +278,9 @@ class vfld_monitor(object):
         #df_write=self.df_out
         #df_write = df_write.fillna(value=pd.np.nan, inplace=True)
         #df_write.to_csv(ofile,sep=' ',header=False,index=False,na_rep='') #'-9999999999')
-        self.df_out.to_csv(ofile,sep=' ',header=False,index=False,na_rep='') #'-9999999999')
+        #the extra QUOTE_NONE is to avoid using extra "" in output for var names, and the escapechar 
+        #so it won't complain about no escapechar unset
+        self.df_out.to_csv(ofile,sep=' ',header=False,index=False,na_rep='',quoting=csv.QUOTE_NONE,quotechar='',escapechar=' ')
 
 
 if __name__ == '__main__':

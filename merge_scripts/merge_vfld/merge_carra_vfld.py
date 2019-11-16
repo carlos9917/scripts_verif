@@ -25,6 +25,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
+from vfldmerge_timestamps import vfldmerge_timestamps as vt
 def drop_duplicates(df_temp):
     '''
     Drop duplicate stations in the df_temp frame.
@@ -117,6 +118,9 @@ if __name__ == '__main__':
     parser.add_argument('-dout','--out_dir',metavar='Path of the output directory',
                                 type=str, default='/perm/ms/dk/nhd/carra_merge_vfld', required=False)
 
+    parser.add_argument('-log','--log_file',metavar='log file name',
+                                type=str, default='merge.log', required=False)
+
     args = parser.parse_args()
 
 
@@ -137,12 +141,14 @@ if __name__ == '__main__':
     datadir = args.vfld_dir
     flen    = args.flen
     finit   = args.finit
+    log_file = args.log_file
 
 
-    logFile=os.path.join(outdir,'merge.log')
+    logFile=os.path.join(outdir,log_file)
     print("All screen output will be written to %s"%logFile)
     setup_logger(logFile,outScreen=False)
-
+    ts_vfld=vt()        
+    forbidden_dates = ts_vfld.timestamps.simtimes.tolist() #which dates already processed
 
     igb = vf(model='carra_IGB', period=period, finit=finit, flen=21, datadir=datadir)
     logger.info("carra_IGB data loaded")
@@ -150,30 +156,33 @@ if __name__ == '__main__':
     logger.info("carra_NE data loaded")
     models=[igb, ne] #NOTE: order is important here, since I will decide to keep 
                      #last occurrence of duplicated stations after concatenate
-    logger.info("merge synop data from all stations (non-overlapping assumed)")
+    logger.info("merge synop data from all stations")
     for date in igb.dates:
-        logger.debug("Merging date %s"%date)
-        #Only collect those dates which contain any data:
-        frames_synop = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
-        models_avail = [f.model for f in frames_synop]
-        logger.debug("Number of models with synop data for %s: %d \n"%(date,len(frames_synop)))
-        logger.debug("Available models (in order of concatenation): %s"%' '.join(models_avail))
-        #print(models_avail)
-        frames_temp = [f for f in models if isinstance(f.data_temp[date],pd.DataFrame)]
-        if len(frames_synop) != 0:
-            dfs=[f.data_synop[date] for f in frames_synop]
-            dft=[f.data_temp[date] for f in frames_temp]
-            df_synop = pd.concat(dfs,sort=False)
-            #test_duplicates(df_synop,date,outdir) #for debugging
-            df_synop = df_synop.drop_duplicates(['stationId'],keep='last') #keeping NE 
-            #fout=os.path.join(outdir,'synop_stations_'+date+'.png') #for debugging
-            #check_plot(df_synop,fout) #for debugging
-            df_temp = pd.concat(dft,ignore_index=True)
-            drop_duplicates(df_temp)
-            mon_save= monitor(model='carra',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
-            mon_save.write_vfld()
-            del df_synop
-            del df_temp
-            del mon_save
+        if date not in forbidden_dates:
+            logger.debug("Merging date %s"%date)
+            #Only collect those dates which contain any data:
+            frames_synop = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
+            models_avail = [f.model for f in frames_synop]
+            logger.debug("Number of models with synop data for %s: %d \n"%(date,len(frames_synop)))
+            logger.debug("Available models (in order of concatenation): %s"%' '.join(models_avail))
+            #print(models_avail)
+            frames_temp = [f for f in models if isinstance(f.data_temp[date],pd.DataFrame)]
+            if len(frames_synop) != 0:
+                dfs=[f.data_synop[date] for f in frames_synop]
+                dft=[f.data_temp[date] for f in frames_temp]
+                df_synop = pd.concat(dfs,sort=False)
+                #test_duplicates(df_synop,date,outdir) #for debugging
+                df_synop = df_synop.drop_duplicates(['stationId'],keep='last') #keeping NE 
+                #fout=os.path.join(outdir,'synop_stations_'+date+'.png') #for debugging
+                #check_plot(df_synop,fout) #for debugging
+                df_temp = pd.concat(dft,ignore_index=True)
+                drop_duplicates(df_temp)
+                mon_save= monitor(model='carra',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
+                mon_save.write_vfld()
+                del df_synop
+                del df_temp
+                del mon_save
+            else:
+                logger.debug("No data available on %s"%date)
         else:
-            logger.debug("No data available on %s"%date)
+            logger.info("Date %s already merged. Jumping to next date."%date)

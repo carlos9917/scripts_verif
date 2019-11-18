@@ -12,7 +12,7 @@ import sys
 import subprocess
 import sqlite3
 vfldout='/scratch/ms/dk/nhx/oprint/carra'
-vfldout='/perm/ms/dk/nhd/carra_merge_vfld'
+#vfldout='/perm/ms/dk/nhd/carra_merge_vfld'
 
 def progress_stream(ifile):
     '''

@@ -240,7 +240,7 @@ class vfld_monitor(object):
         #declaring these values for header as strings is the only way I can ensure these numbers are written as non-float
         header_synop=[str(ns_synop), str(ns_temp), str(4)]
         df_out=pd.DataFrame(columns=colss) 
-        if 'FI' in colss:
+        if 'FI 0' in colss:
             nvars_synop = df_synop.shape[1]-3 # subtract: stationId,lat,lon
             varlist_synop=colss[3:]  
             nvars=len(colss[3:])

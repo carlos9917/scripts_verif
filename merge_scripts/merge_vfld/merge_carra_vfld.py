@@ -121,6 +121,9 @@ if __name__ == '__main__':
     parser.add_argument('-log','--log_file',metavar='log file name',
                                 type=str, default='merge.log', required=False)
 
+    parser.add_argument('-branch','--carra_branch',metavar='branch of carra being used',
+                                type=str, default='carra', required=False)
+
     args = parser.parse_args()
 
 
@@ -142,11 +145,13 @@ if __name__ == '__main__':
     flen    = args.flen
     finit   = args.finit
     log_file = args.log_file
-
+    carra_branch = args.carra_branch
+    force_write = False # Force writing. Only for debugging purposes
 
     logFile=os.path.join(outdir,log_file)
     print("All screen output will be written to %s"%logFile)
     setup_logger(logFile,outScreen=False)
+    if (force_write): logger.info("NOTE: forcing overwriting of the vfld files")
     ts_vfld=vt()        
     forbidden_dates = ts_vfld.timestamps.simtimes.tolist() #which dates already processed
 
@@ -158,7 +163,7 @@ if __name__ == '__main__':
                      #last occurrence of duplicated stations after concatenate
     logger.info("merge synop data from all stations")
     for date in igb.dates:
-        if date not in forbidden_dates:
+        if (date not in forbidden_dates) or (force_write) :
             logger.debug("Merging date %s"%date)
             #Only collect those dates which contain any data:
             frames_synop = [f for f in models if isinstance(f.data_synop[date],pd.DataFrame)]
@@ -177,7 +182,7 @@ if __name__ == '__main__':
                 #check_plot(df_synop,fout) #for debugging
                 df_temp = pd.concat(dft,ignore_index=True)
                 drop_duplicates(df_temp)
-                mon_save= monitor(model='carra',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
+                mon_save= monitor(model=carra_branch,date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
                 mon_save.write_vfld()
                 del df_synop
                 del df_temp

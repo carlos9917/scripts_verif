@@ -110,7 +110,7 @@ if __name__ == '__main__':
     parser.add_argument('-pe','--period',metavar='Period to process (YYYYMMDD-YYYYMMDD)',
                                 type=str, default='19980101-19980101', required=False)
     parser.add_argument('-fl','--flen',metavar='Forecast length (HH)',
-                                type=int, default=30, required=False)
+                                type=int, default=31, required=False)
     parser.add_argument('-fi','--finit',metavar='Forecast init times. One value or list separated by commans (00,06,12,18)',
                                 type=str, default='00,06,12,18', required=False)
     parser.add_argument('-dvfl','--vfld_dir',metavar='Path of the vfld directory',

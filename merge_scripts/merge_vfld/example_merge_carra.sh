@@ -17,4 +17,4 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #fi: init times
 wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
-$py3 ./merge_carra_vfld.py -pe 19970906-19970906 -fl 30 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir
+$py3 ./merge_carra_vfld.py -pe 19970906-19970906 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir

@@ -254,7 +254,11 @@ class vfld_monitor(object):
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
+        if self.model in ['carra','beta1','beta2','rc1']:
+            logger.debug("carra or carra branch (%s): Setting pressure levels to 10"%self.model)
+            df_out = df_out.append({'stationId':str(10)},ignore_index=True) #10 pressure levels for carra (constant)
+        else:
+            df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
         df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
             df_out = df_out.append({'stationId':var+' 0'},ignore_index=True) #include accumulation time for temp vars

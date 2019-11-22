@@ -18,8 +18,8 @@ py3=/perm/ms/dk/nhd/miniconda3/envs/py37/bin/python
 #out and in directories:
 #outdir=/perm/ms/dk/nhd/carra_merge_vfld
 yy=2007
-branch='beta2'
-outdir=/scratch/ms/dk/nhx/oprint/carra_${branch}
+branch='carra_rc1'
+outdir=/scratch/ms/dk/nhx/oprint/${branch}
 vfldir=/scratch/ms/dk/nhz/oprint/
 #pe: period to process (do not use more than 1 month at a time, otherwise it is too slow!)
 #fl: forecast length

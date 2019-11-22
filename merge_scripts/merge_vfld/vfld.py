@@ -254,7 +254,7 @@ class vfld_monitor(object):
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        if self.model in ['carra','beta1','beta2','rc1']:
+        if self.model in ['carra','carra_beta1','carra_beta2','carra_rc1']:
             logger.debug("carra or carra branch (%s): Setting pressure levels to 10"%self.model)
             df_out = df_out.append({'stationId':str(10)},ignore_index=True) #10 pressure levels for carra (constant)
         else:

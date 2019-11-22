@@ -123,6 +123,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-branch','--carra_branch',metavar='branch of carra being used',
                                 type=str, default='carra', required=False)
+    parser.add_argument('-fw','--force_write',metavar='force overwriting of existing data',
+                                type=bool, default=True, required=False)
 
     args = parser.parse_args()
 
@@ -146,7 +148,7 @@ if __name__ == '__main__':
     finit   = args.finit
     log_file = args.log_file
     carra_branch = args.carra_branch
-    force_write = True # Force writing. Only for debugging purposes
+    force_write = args.force_write #True # Force writing. Only for debugging purposes
 
     logFile=os.path.join(outdir,log_file)
     print("All screen output will be written to %s"%logFile)

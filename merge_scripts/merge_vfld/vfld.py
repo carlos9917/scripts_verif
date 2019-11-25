@@ -129,8 +129,9 @@ class vfld(object):
                             ifiles_model.append(ifile)
                         else:
                             ifiles_model.append('None')
-        if len(ifiles_model) == 0:
-            logger.info("WARNING: data not found for dates %s"%self.dates)
+        if (len(ifiles_model) == 0) or (len(set(ifiles_model)) == 1): # if all elements equal all None!
+            logger.info("WARNING: no data found for dates %s"%self.dates)
+            logger.info(ifiles_model)
         logger.debug("first file for model %s: %s"%(self.model,ifiles_model[0]))
         logger.debug("last file for model %s: %s"%(self.model,ifiles_model[-1]))
         return ifiles_model, dtgs

@@ -123,8 +123,8 @@ if __name__ == '__main__':
 
     parser.add_argument('-branch','--carra_branch',metavar='branch of carra being used',
                                 type=str, default='carra', required=False)
-    parser.add_argument('-fw','--force_write',metavar='force overwriting of existing data',
-                                type=bool, default=True, required=False)
+    parser.add_argument('-fw','--force_write',action='store_false') # set to true by default
+                        #to change, simply use argument alon
 
     args = parser.parse_args()
 
@@ -149,6 +149,7 @@ if __name__ == '__main__':
     log_file = args.log_file
     carra_branch = args.carra_branch
     force_write = args.force_write #True # Force writing. Only for debugging purposes
+    print(force_write)
 
     logFile=os.path.join(outdir,log_file)
     print("All screen output will be written to %s"%logFile)
@@ -157,10 +158,10 @@ if __name__ == '__main__':
     ts_vfld=vt()        
     forbidden_dates = ts_vfld.timestamps.simtimes.tolist() #which dates already processed
 
-    igb = vf(model='carra_IGB', period=period, finit=finit, flen=21, datadir=datadir)
-    logger.info("carra_IGB data loaded")
-    ne = vf(model='carra_NE', period=period, finit=finit, flen=21, datadir=datadir)
-    logger.info("carra_NE data loaded")
+    igb = vf(model=carra_branch+'_IGB', period=period, finit=finit, flen=flen, datadir=datadir)
+    logger.info(carra_branch+"_IGB data loaded")
+    ne = vf(model=carra_branch+'_NE', period=period, finit=finit, flen=flen, datadir=datadir)
+    logger.info(carra_branch+"_NE data loaded")
     models=[igb, ne] #NOTE: order is important here, since I will decide to keep 
                      #last occurrence of duplicated stations after concatenate
     logger.info("merge synop data from all stations")

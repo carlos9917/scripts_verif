@@ -16,5 +16,6 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #fl: forecast length
 #fi: init times
 wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
+wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
-$py3 ./merge_carra_vfld.py -pe 19970906-19970906 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir
+$py3 ./merge_carra_vfld.py -pe 19970906-19970906 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -fw

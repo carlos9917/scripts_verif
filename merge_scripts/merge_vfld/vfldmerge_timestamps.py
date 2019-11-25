@@ -47,7 +47,7 @@ def progress_stream(ifile):
     #Go through list of max dates for all streams. Keep minimum so it matches both NE and IGB
     #The dates between last merged vfld and current can then be processed
     for i in range(1,4):    
-        max_dtg_stream['stream_'+str(i)]=min(dtg_stream['stream_'+str(i)])
+        max_dtg_stream['stream_'+str(i)]=str(min(dtg_stream['stream_'+str(i)]))
     #print("total months completed: %d (%g)"%(months_total,total))
     return max_dtg_stream
 

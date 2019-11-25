@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --error=/scratch/ms/dk/nhx/oprint/runout/vfldmerge-%J.err
-#SBATCH --output=/scratch/ms/dk/nhx/oprint/runout/vfldmerge-%J.out
+#SBATCH --error=/scratch/ms/dk/nhx/oprint/runout/dayvfmerge-%J.err
+#SBATCH --output=/scratch/ms/dk/nhx/oprint/runout/dayvfmerge-%J.out
 #SBATCH --job-name=dayvfmerge
 
 #Script to merge latest data available from all 3 streams
@@ -26,5 +26,5 @@ cd $wrkdir
 yymmdd_range=($($py3 ./update_vfld.py))
 for yymmdd in ${yymmdd_range[@]}; do
 echo "Doing period: $yymmdd"
-$py3 ./merge_carra_vfld.py -pe $yymmdd -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -log $logfile -fw False
+$py3 ./merge_carra_vfld.py -pe $yymmdd -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -log $logfile -fw
 done

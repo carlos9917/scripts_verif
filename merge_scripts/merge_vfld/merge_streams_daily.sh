@@ -24,7 +24,10 @@ logfile=mergedaily_${timestamp}.log
 wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
 yymmdd_range=($($py3 ./update_vfld.py))
+i=0
 for yymmdd in ${yymmdd_range[@]}; do
+let i++
+logfile=mergedaily_${timestamp}_${i}.log
 echo "Doing period: $yymmdd"
 $py3 ./merge_carra_vfld.py -pe $yymmdd -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -log $logfile -fw
 done

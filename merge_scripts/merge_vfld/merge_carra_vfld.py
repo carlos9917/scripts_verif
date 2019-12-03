@@ -149,7 +149,6 @@ if __name__ == '__main__':
     log_file = args.log_file
     carra_branch = args.carra_branch
     force_write = args.force_write #True # Force writing. Only for debugging purposes
-    print(force_write)
 
     logFile=os.path.join(outdir,log_file)
     print("All screen output will be written to %s"%logFile)

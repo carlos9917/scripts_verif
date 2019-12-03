@@ -174,7 +174,7 @@ if __name__ == '__main__':
             logger.debug("Available models (in order of concatenation): %s"%' '.join(models_avail))
             #print(models_avail)
             frames_temp = [f for f in models if isinstance(f.data_temp[date],pd.DataFrame)]
-            if len(frames_synop) != 0:
+            if len(frames_synop) != 0 and len(frames_synop) == 2: #only merge if two models available!
                 dfs=[f.data_synop[date] for f in frames_synop]
                 dft=[f.data_temp[date] for f in frames_temp]
                 df_synop = pd.concat(dfs,sort=False)
@@ -190,6 +190,14 @@ if __name__ == '__main__':
                 del df_temp
                 del mon_save
             else:
-                logger.debug("No data available on %s"%date)
+                logger.debug("No data available on %s or data available only for one model"%date)
+                logger.debug("Number of models: %d"%len(frames_synop))
+                #Delete this file if it exists:
+                ofile=os.path.join(outdir,''.join(['vfld',carra_branch,date]))
+                logger.debug("Skipping this date and deleting %s if it exists"%ofile)
+                if os.path.exists(ofile):
+                    os.remove(ofile)
+                
+
         else:
             logger.info("Date %s already merged. Jumping to next date."%date)

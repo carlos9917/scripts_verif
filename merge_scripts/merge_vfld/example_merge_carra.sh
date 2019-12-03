@@ -1,4 +1,7 @@
 #!/bin/bash 
+#SBATCH --error=/perm/ms/dk/nhd/carra_merge_vfld/runout-%J.out
+#SBATCH --output=/perm/ms/dk/nhd/carra_merge_vfld/runout-%J.out
+#SBATCH --workdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 
 #Example script to combine carra NE and IGB data
 #The python script below takes into account the overlapping
@@ -15,7 +18,7 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #pe: period to process (do not use more than 1 month at a time, otherwise it is too slow!)
 #fl: forecast length
 #fi: init times
-wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
+wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
-$py3 ./merge_carra_vfld.py -pe 19970906-19970906 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -fw
+$py3 ./merge_carra_vfld.py -pe 20160627-20160627 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir # -fw

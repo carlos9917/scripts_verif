@@ -17,8 +17,8 @@ py3=/perm/ms/dk/nhd/miniconda3/envs/py37/bin/python
 
 #out and in directories:
 #outdir=/perm/ms/dk/nhd/carra_merge_vfld
-yy=2012
-branch='carra_beta2'
+yy=2017
+branch='carra_alpha2'
 outdir=/scratch/ms/dk/nhx/oprint/${branch}
 #vfldir=/scratch/ms/dk/nhz/oprint/
 vfldir=/scratch/ms/dk/nhd/carra_links/
@@ -28,12 +28,13 @@ vfldir=/scratch/ms/dk/nhd/carra_links/
 #yymm : possible command line option here. calculate num of days in month and set command line args below
 #yymm=$1
 #April 2007, Sep 1997
+#Also: Jan 2000, 2017 and July 2012
 logfile=merge_${branch}_${yy}.log
 #wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
 #for mm in 01 02 03 04 05 06 07 08 09 10 11 12; do
-for mm in 07; do
+for mm in 01; do
 yymm=$yy$mm
 yymmdd=`$py3 ./finaldate.py $yy${mm}01`
 echo "Doing period: $yy${mm}01-$yymmdd"

@@ -201,3 +201,4 @@ if __name__ == '__main__':
 
         else:
             logger.info("Date %s already merged. Jumping to next date."%date)
+    logger.info("merge script finished")

@@ -69,7 +69,6 @@ class vobs(object):
         for i,ifile in enumerate(ifiles):
             #date=self.dates[i] #ORIGINAL: now storing in ftimes to match with vfld dates
             date=self.ftimes[i]
-            print(date)
             data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile)
             # print a warning if synop data is not there:
             # TODO: if no synop, don't include model!
@@ -106,12 +105,13 @@ class vobs(object):
             data_synop = pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,
                     dtype=str,skiprows=ignore_rows,nrows=nsynop_stations)
             #NOTE: will name the columns as VariableName+AccumulationTime. To be split afterwards 
+            #NOTE 2: taking this back, since for the merging makes more sense
             #when writing the data in vfld format for monitor in vfld_monitor
-            #data_synop.columns=colnames
-            if 'FI' in colnames:
-                data_synop.columns=colnames[0:3]+[' '.join(str(i) for i in col) for col in zip(colnames[3:],accum_synop)]
-            else:
-                data_synop.columns=colnames[0:4]+[' '.join(str(i) for i in col) for col in zip(colnames[4:],accum_synop)]
+            data_synop.columns=colnames
+            #if 'FI' in colnames:
+            #    data_synop.columns=colnames[0:3]+[' '.join(str(i) for i in col) for col in zip(colnames[3:],accum_synop)]
+            #else:
+            #    data_synop.columns=colnames[0:4]+[' '.join(str(i) for i in col) for col in zip(colnames[4:],accum_synop)]
             ignore_temp=ignore_rows+data_synop.shape[0]+10
             data_temp =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
                                       dtype=str,skiprows=ignore_temp)

@@ -10,11 +10,17 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
 class vobs(object):
-    def __init__(self,period=None, flen=None, datadir=None):
+    def __init__(self,period=None, flen=None, datadir=None, finit=None):
         self.flen = flen
+        self.finit = finit
+        if ',' in self.finit:
+            self.finit=finit.split(',')
+        else:
+            self.finit=[finit]
         self.period = period.split('-')
         self.datadir = datadir
         self.ifiles,self.dates = self._locate_files(self.datadir,self.period,self.flen)
+        self.ftimes = self._dates_2ftimes(self.period,self.flen)
         data_synop, data_temp, accum_synop = self._get_data(self.ifiles)
         self.data_synop = data_synop
         self.data_temp = data_temp
@@ -35,8 +41,12 @@ class vobs(object):
 
         for date in str_dates:
             for hour in range(0,flen):
-                dtgs.append(''.join([date,str(hour).zfill(2)]))
-                fname=''.join(['vobs',date,str(hour).zfill(2)])
+                date_file = datetime.datetime.strptime(date,'%Y%m%d') + datetime.timedelta(seconds=3600*hour)
+                date_file = datetime.datetime.strftime(date_file,'%Y%m%d%H')
+                #dtgs.append(''.join([date_file,str(hour).zfill(2)]))
+                dtgs.append(date_file)
+                #fname=''.join(['vobs',date_file,str(hour).zfill(2)])
+                fname=''.join(['vobs',date_file])
                 ifile=os.path.join(datadir,fname)
                 if os.path.exists(ifile):
                     ifiles.append(ifile)
@@ -57,7 +67,9 @@ class vobs(object):
         data_temp=OrderedDict()
         accum_synop =OrderedDict()
         for i,ifile in enumerate(ifiles):
-            date=self.dates[i]
+            #date=self.dates[i] #ORIGINAL: now storing in ftimes to match with vfld dates
+            date=self.ftimes[i]
+            print(date)
             data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile)
             # print a warning if synop data is not there:
             # TODO: if no synop, don't include model!
@@ -81,6 +93,7 @@ class vobs(object):
         if 'PE' in varlist:
             rawData=rawData.rename(columns={'PE':'PE1'})
         return rawData
+
     def _split_data(self,ifile):
         '''
         Split the data from ifile into SYNOP and TEMP
@@ -108,6 +121,7 @@ class vobs(object):
             accum_synop = 'None'
     
         return data_synop, data_temp, accum_synop
+
     def _get_synop_vars(self,ifile):
         '''
         Extract information about the SYNOP variables in vfld file
@@ -137,6 +151,21 @@ class vobs(object):
         ignore_rows = 2 + nsynop_vars # number of rows to ignore before reading the actual synop data
         return colnames, nsynop_stations, ignore_rows, ntemp_stations, accum_synop
 
+    def _dates_2ftimes(self,period,flen):
+        '''
+        convert real dates to forecast times
+        '''
+        date_ini=datetime.datetime.strptime(period[0],'%Y%m%d')
+        date_end=datetime.datetime.strptime(period[1],'%Y%m%d')
+        dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
+        dtgs=[]
+        str_dates=[datetime.datetime.strftime(date,'%Y%m%d') for date in dates]
+        for date in str_dates:
+            for init_hour in self.finit:
+                for hour in range(0,flen):
+                    dtgs.append(''.join([date[0:8],init_hour,str(hour).zfill(2)]))
+        return dtgs            
+
     def merge_synop(dobs,dexp,var):
         '''
         merge the obs and vfld data
@@ -161,7 +190,7 @@ class vobs(object):
 
     def read_temp(time,date):
         '''Read the temp stations. Currently not in use,
-        since verif does not use this data'''
+        since verif does not use this type of data'''
         pass
     
     # open output file for writing the fcst/obs data for any variable
@@ -188,8 +217,6 @@ class vobs(object):
         data=data.rename(columns={var+'_x': 'obs', var+'_y':'fcst',
             'lat_x':'lat','lon_x':'lon','HH_x':'altitude','stationId':'location'})
         data_write=data[['date','leadtime','location','lat','lon','altitude','obs','fcst','p0','p11','pit']]
-        #import pdb
-        #pdb.set_trace()
         if exists==True:
             #with open(ifile,'a') as f:
             #data_.to_csv(ofile)
@@ -205,4 +232,5 @@ if __name__ == '__main__':
     period='20190601-20190601'
     datadir='/home/cap/data/from_ecmwf/codes/scripts_verif/contrib_verif/data/OBS'
     vobs_data = vobs(period=period, flen=24, datadir=datadir)
+    print(vobs_data.data_synop)
     #SYNOP: access data for a particular YYYYMMDDHH using vobs_data.data_synop[stringdate]

@@ -24,13 +24,13 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #fi: init times
 #yymm : possible command line option here. calculate num of days in month and set command line args below
 #yymm=$1
-yy=2014
+yy=2016
 logfile=merge_${yy}.log
 #wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
 #for mm in 01 02 03 04 05 06 07 08 09 10 11 12; do
-for mm in 01 02 03 04 05 06 07 08; do
+for mm in 06; do
 yymm=$yy$mm
 yymmdd=`$py3 ./finaldate.py $yy${mm}01`
 echo "Doing period: $yy${mm}01-$yymmdd"

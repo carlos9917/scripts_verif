@@ -27,4 +27,4 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
 #wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
-$py3 ./merge_carra_vfld.py -pe 20160601-20160630 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir # -fw
+$py3 ./merge_carra_vfld.py -pe 20160701-20160710 -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir # -fw

@@ -17,14 +17,18 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #fi: init times
 #yymm : possible command line option here. calculate num of days in month and set command line args below
 #yymm=$1
-yy=2016
+yy=2019
 logfile=merge_${yy}.log
 wrkdir=/perm/ms/dk/nhd/scripts_verif/contrib_verif
+var='TT'
+model='EC9'
 cd $wrkdir
-$py3 ./merge_vobs_vfld.py
-#for mm in 06; do
-#yymm=$yy$mm
-#yymmdd=`$py3 ./finaldate.py $yy${mm}01`
-#echo "Doing period: $yy${mm}01-$yymmdd"
-#$py3 ./merge_carra_vfld.py -pe $yy${mm}01-$yymmdd -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -log $logfile -fw
-#done
+for mm in 09; do
+    #for dd in 01 11 21; do
+    for dd in 21; do
+    let df=dd+9
+    df=`printf "%02d\n" $df`
+    echo "Doing period: $yy${mm}$dd-$yy$mm$df"
+    $py3 ./merge_vobs_vfld.py -pe $yy$mm$dd-$yy$mm$df -m $model -fi 00 -fl 61 -var $var -din '/scratch/ms/dk/nhz/oprint' -dout '/perm/ms/dk/nhd/carra_merge_vfld'
+done
+done

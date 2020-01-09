@@ -76,32 +76,54 @@ def write_var(odir,var,data,datum,ini):
             data_write.to_csv(f,sep=' ',index=False) 
 
 if __name__ == '__main__':
-    period='20190601-20190630'
-    #begin_vfld,end_vfld=period_vfld.split('-')
-    #ndays=(datetime.strptime(end_vfld,'%Y%m%d') - datetime.strptime(begin_vfld,'%Y%m%d')).days
+    import argparse
+    from argparse import RawTextHelpFormatter
+    parser = argparse.ArgumentParser(description='''Combine vobs and vfld data
+                        Example usage: python merge_vobs_vfld.py -pe 19980101-19980101 -model EC9 -fi 00 -fl 61 -var TT -dout /perm/ms/dk/nhd/carra_merge_vfld -din /scratch/ms/dk/nhz/oprint/ ''',formatter_class=RawTextHelpFormatter)
+    parser.add_argument('-m','--model',metavar='model to process',
+                                type=str, default='EC9', required=False)
+    parser.add_argument('-pe','--period',metavar='Period to process (YYYYMMDD-YYYYMMDD)',
+                                type=str, default='19980101-19980101', required=False)
+    parser.add_argument('-fl','--flen',metavar='Forecast length (HH)',
+                                type=int, default=62, required=False)
+    parser.add_argument('-fi','--finit',metavar='Forecast init times. One value or list separated by commans (00,06,12,18)',
+                                type=str, default='00,06,12,18', required=False)
+    parser.add_argument('-dout','--out_dir',metavar='Path of the output directory',
+                                type=str, default='/perm/ms/dk/nhd/carra_merge_vfld', required=False)
+    parser.add_argument('-din','--in_dir',metavar='Path of the input directory',
+                                type=str, default='/perm/ms/dk/nhd/carra_merge_vfld', required=False)
+    parser.add_argument('-var','--variable',metavar='variable to process',
+                                type=str, default='TT', required=False)
 
-    #period_vobs='20190601-20190601'
-    model='EC9'
-    finit='00'
-    flen=61
-    datadir='/home/cap/data/from_ecmwf/codes/scripts_verif/contrib_verif/data'
-    datadir='/scratch/ms/dk/nhz/oprint/'
-    odir='/home/cap/tmp'
-    odir='/perm/ms/dk/nhd/carra_merge_vfld'
+    #NOTE: use a short range. 30 days seems to be too long and I run into memory issues! Using 10
+    args = parser.parse_args()
+    try:
+        print("Arguments: %s"%args)
+    except:
+        print("Error. Exiting")
+        parser.print_help()
+        sys.exit(0)
+    period=args.period #'20190611-20190620'
+    model=args.model# 'EC9'
+    finit=args.finit #'00'
+    flen=args.flen #61
+    var=args.variable #'TT'
+    datadir=args.in_dir
+    odir=args.out_dir
+    #datadir='/home/cap/data/from_ecmwf/codes/scripts_verif/contrib_verif/data'
+    #datadir='/scratch/ms/dk/nhz/oprint'
+    #odir='/home/cap/tmp'
+    #odir='/perm/ms/dk/nhd/carra_merge_vfld'
     #get vfld and vobs data
     ec9 = vfld(model=model, period=period, finit=finit, flen=flen, datadir=datadir)
     obs = vobs(period=period, flen=flen, finit=finit, datadir=os.path.join(datadir,'OBS')) #note: vobs only every 24 h
-    #find the matching stations 
+
     date_vobs=ec9.dates[0][0:8]+ec9.dates[0][10:12]
     vobs_count=datetime.strptime(date_vobs, "%Y%m%d%H")
+
     for date in ec9.dates:
-        #vobs_count=vobs_count + timedelta(days=1)
-        #date_vobs=vobs_count.strftime("%Y%m%d%H")
-        #find matching date and station for this 
-        #if isinstance(ec9.data_synop[date],pd.DataFrame):
         if isinstance(ec9.data_synop[date],pd.DataFrame) and isinstance(obs.data_synop[date],pd.DataFrame):
             print("Merging for date %s"%date)
-            merged_df = merge_synop(obs.data_synop[date],ec9.data_synop[date],'TT')
-            write_var(odir,'TT',merged_df,date,finit)
-        #if isinstance(ec9.data_synop[date],pd.DataFrame) and isinstance(obs.data_synop[date],pd.DataFrame):
+            merged_df = merge_synop(obs.data_synop[date],ec9.data_synop[date],var)
+            write_var(odir,var,merged_df,date,finit)
 

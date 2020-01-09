@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     import argparse
     from argparse import RawTextHelpFormatter
-    parser = argparse.ArgumentParser(description='''Combine all Greenland 750 m vfld data
+    parser = argparse.ArgumentParser(description='''Combine IGB and NE data 
                         Example usage: python merge_carra_vfld.py -pe 19980101-19980101 -fl 21 -fi 00,06,12,18 -dout /perm/ms/dk/nhd/carra_merge_vfld -dvfl /scratch/ms/dk/nhz/oprint/ ''',formatter_class=RawTextHelpFormatter)
 
     parser.add_argument('-pe','--period',metavar='Period to process (YYYYMMDD-YYYYMMDD)',

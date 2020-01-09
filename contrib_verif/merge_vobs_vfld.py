@@ -76,16 +76,18 @@ def write_var(odir,var,data,datum,ini):
             data_write.to_csv(f,sep=' ',index=False) 
 
 if __name__ == '__main__':
-    period='20190601-20190601'
+    period='20190601-20190630'
     #begin_vfld,end_vfld=period_vfld.split('-')
     #ndays=(datetime.strptime(end_vfld,'%Y%m%d') - datetime.strptime(begin_vfld,'%Y%m%d')).days
 
     #period_vobs='20190601-20190601'
     model='EC9'
     finit='00'
-    flen=52
+    flen=61
     datadir='/home/cap/data/from_ecmwf/codes/scripts_verif/contrib_verif/data'
+    datadir='/scratch/ms/dk/nhz/oprint/'
     odir='/home/cap/tmp'
+    odir='/perm/ms/dk/nhd/carra_merge_vfld'
     #get vfld and vobs data
     ec9 = vfld(model=model, period=period, finit=finit, flen=flen, datadir=datadir)
     obs = vobs(period=period, flen=flen, finit=finit, datadir=os.path.join(datadir,'OBS')) #note: vobs only every 24 h

@@ -11,9 +11,10 @@ def check_streams_availability(stream,period,datadir):
      IGB and NE streams are indeed available
      '''
      flen=31
-     #forecast hours expected from 0-30: every 1h until 6, then every 3 h
-     fhours_expected=[str(i).zfill(2) for i in range(0,7)] + [str(i).zfill(2) for i in range(9,flen,3)]
-     #init hours expected: every 3h every day
+     #init times: 00 and 12. Forecast hours expected from 0-30. Every 1h until 6, then every 3 h
+     #init times: 03,06,09,15,18,21. Forecast hours expected from 0-3. Every 1h.
+     fhours_long=[str(i).zfill(2) for i in range(0,7)] + [str(i).zfill(2) for i in range(9,flen,3)]
+     fhours_short=[str(i).zfill(2) for i in range(0,4)]
      init_expected = [str(i).zfill(2) for i in range(0,22,3)]
      period = period.split('-')
      date_ini=datetime.datetime.strptime(period[0],'%Y%m%d')
@@ -27,18 +28,24 @@ def check_streams_availability(stream,period,datadir):
      dates_found=[]
      for ifile in os.listdir(vflddir): #TODO: need to refine search below. 
                                        # Only matching the YYYYMM of first date!
-                                       #OK for same month
+                                       #OK for same month, since usually running
+                                       #one month at a time
          if fnmatch.fnmatch(ifile, 'vfld*'+period[0][0:6]+'*'):
              this_date=''.join([n for n in ifile if n.isdigit()])
              dates_found.append(this_date)
      dtg_expected=[]
      for date in model_dates:
          for init in init_expected:
-             for hour in fhours_expected:
-                 fname=''.join(['vfld',stream,date,init,str(hour).zfill(2)])
-                 #fdir='/'.join([datadir,model])
-                 ifile=os.path.join(vflddir,fname)
-                 dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+             if init in ['00', '12']:
+                 for hour in fhours_long:
+                     fname=''.join(['vfld',stream,date,init,str(hour).zfill(2)])
+                     ifile=os.path.join(vflddir,fname)
+                     dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+             else:
+                 for hour in fhours_short:
+                     fname=''.join(['vfld',stream,date,init,str(hour).zfill(2)])
+                     ifile=os.path.join(vflddir,fname)
+                     dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
      dates_pass=[]
      dates_miss=[]
      for dtg in dtg_expected:

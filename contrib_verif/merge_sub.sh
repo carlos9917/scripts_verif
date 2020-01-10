@@ -23,9 +23,9 @@ wrkdir=/perm/ms/dk/nhd/scripts_verif/contrib_verif
 var='TT'
 model='EC9'
 cd $wrkdir
-for mm in 09; do
-    #for dd in 01 11 21; do
-    for dd in 21; do
+for mm in 06; do
+    for dd in 01 11 21; do
+    #for dd in 21; do
     let df=dd+9
     df=`printf "%02d\n" $df`
     echo "Doing period: $yy${mm}$dd-$yy$mm$df"

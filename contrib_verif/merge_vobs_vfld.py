@@ -51,7 +51,7 @@ def write_var(odir,var,data,datum,ini):
     #date = str(datum[0:8])+str(ini)
     date = str(datum[0:8]) #date for the data below
     #date_file = str(datum[0:6])+str(ini)+datum[10:12] #date for the file. All data will go in one file per month
-    date_file = datum[0:8] #+datum[10:12] #date for the file. All data will go in one file per month
+    date_file = datum[0:4] #+datum[10:12] #date for the file. All data will go in one file per month
     #odir,fname=os.path.split(infile)
     #odir,stuff = os.path.split(odir)
     ofile=os.path.join(odir,'synop_'+'_'.join([var,date_file])+'.txt')

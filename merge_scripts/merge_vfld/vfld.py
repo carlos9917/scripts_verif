@@ -33,7 +33,8 @@ class vfld(object):
         self.flen= flen
         self.fhours = list(range(0,flen))
         self.datadir=datadir
-        ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.finit,self.flen)
+        #ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.finit,self.flen)
+        ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.flen)
         self.ifiles_model=ifiles_model
         self.dates = dates_model
         #self.dates=self._get_dates_from_files(self.ifiles_model)
@@ -93,7 +94,28 @@ class vfld(object):
     #    print("dates from files %s "%' '.join(dates))        
     #    return dates
 
-    def _locate_files(self,datadir,model,period,finit,flen):
+    def _dtg_expected_carra(self,flen,dates):
+        '''
+           return dates expected to be found in the carra streams
+        '''
+        #init times: 00 and 12. Forecast hours expected from 0-30. Every 1h until 6, then every 3 h
+        #init times: 03,06,09,15,18,21. Forecast hours expected from 0-3. Every 1h.
+        fhours_long=[str(i).zfill(2) for i in range(0,7)] + [str(i).zfill(2) for i in range(9,flen,3)]
+        fhours_short=[str(i).zfill(2) for i in range(0,4)]
+        init_expected = [str(i).zfill(2) for i in range(0,22,3)]
+        dtg_expected=[]
+        for date in dates:
+            for init in init_expected:
+                if init in ['00', '12']:
+                    for hour in fhours_long:
+                        dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+                else:
+                    for hour in fhours_short:
+                        dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+        return dtg_expected
+
+    #def _locate_files(self,datadir,model,period,finit,flen):
+    def _locate_files(self,datadir,model,period,flen):
         '''
         Locate the files to process from each model.
         period = YYYYMMDD_beg-YYYYMMDD_end
@@ -104,31 +126,39 @@ class vfld(object):
         dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
         model_dates=[datetime.datetime.strftime(date,'%Y%m%d') for date in dates]
         ifiles_model = []
-        dtgs=[]
-
-        for date in model_dates:
-            for init_hour in self.finit:
-                for hour in range(0,flen):
-                    dtgs.append(''.join([date,init_hour,str(hour).zfill(2)]))
-                    if model != 'tasii':
-                        fname=''.join(['vfld',model,date,init_hour,str(hour).zfill(2)])
-                        fdir='/'.join([datadir,model])
-                        ifile=os.path.join(fdir,fname)
-                        if os.path.exists(ifile):
-                            ifiles_model.append(ifile)
-                        else:
-                            ifiles_model.append('None')
-                    elif model == 'tasii':
-                        dtgtas=datetime.datetime.strptime(date+init_hour,'%Y%m%d%H') - datetime.timedelta(seconds=10800)
-                        dtgtas = datetime.datetime.strftime(dtgtas,'%Y%m%d%H')
-                        hour3=str(hour+3).zfill(2)
-                        fname=''.join(['vfld',model,dtgtas,hour3])
-                        fdir='/'.join([datadir,model])
-                        ifile=os.path.join(fdir,fname)
-                        if os.path.exists(ifile):
-                            ifiles_model.append(ifile)
-                        else:
-                            ifiles_model.append('None')
+        dtgs=self._dtg_expected_carra(flen,model_dates)
+        for dtg in dtgs:
+            fname=''.join(['vfld',model,dtg])
+            fdir='/'.join([datadir,model])
+            ifile=os.path.join(fdir,fname)
+            if os.path.exists(ifile):
+                ifiles_model.append(ifile)
+            else:
+                ifiles_model.append('None')
+        #dtgs=[]
+        #for date in model_dates:
+        #    for init_hour in self.finit:
+        #        for hour in range(0,flen):
+        #            dtgs.append(''.join([date,init_hour,str(hour).zfill(2)]))
+        #            if model != 'tasii':
+        #                fname=''.join(['vfld',model,date,init_hour,str(hour).zfill(2)])
+        #                fdir='/'.join([datadir,model])
+        #                ifile=os.path.join(fdir,fname)
+        #                if os.path.exists(ifile):
+        #                    ifiles_model.append(ifile)
+        #                else:
+        #                    ifiles_model.append('None')
+        #            elif model == 'tasii':
+        #                dtgtas=datetime.datetime.strptime(date+init_hour,'%Y%m%d%H') - datetime.timedelta(seconds=10800)
+        #                dtgtas = datetime.datetime.strftime(dtgtas,'%Y%m%d%H')
+        #                hour3=str(hour+3).zfill(2)
+        #                fname=''.join(['vfld',model,dtgtas,hour3])
+        #                fdir='/'.join([datadir,model])
+        #                ifile=os.path.join(fdir,fname)
+        #                if os.path.exists(ifile):
+        #                    ifiles_model.append(ifile)
+        #                else:
+        #                    ifiles_model.append('None')
         if (len(ifiles_model) == 0) or (len(set(ifiles_model)) == 1): # if all elements equal all None!
             logger.info("WARNING: no %s data found for dates %s"%(model,model_dates))
             logger.info(ifiles_model)

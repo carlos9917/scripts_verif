@@ -39,7 +39,7 @@ def merge_synop(dobs,dexp,var):
     #the result will contain vars with _x for OBS and _y for EXP
     return mergeOE
 
-def write_var(odir,var,data,datum,ini):
+def write_var(odir,model,var,data,datum,ini):
     ''' objective is to create one file per day.
         The data will be appended to the end of the file
         if more data is added
@@ -54,7 +54,7 @@ def write_var(odir,var,data,datum,ini):
     date_file = datum[0:4] #+datum[10:12] #date for the file. All data will go in one file per month
     #odir,fname=os.path.split(infile)
     #odir,stuff = os.path.split(odir)
-    ofile=os.path.join(odir,'synop_'+'_'.join([var,date_file])+'.txt')
+    ofile=os.path.join(odir,'synop_'+'_'.join([model,var,date_file])+'.txt')
 
 
     exists = os.path.isfile(ofile)
@@ -115,7 +115,9 @@ if __name__ == '__main__':
     #odir='/home/cap/tmp'
     #odir='/perm/ms/dk/nhd/carra_merge_vfld'
     #get vfld and vobs data
+    print("Reading model %s"%model)
     ec9 = vfld(model=model, period=period, finit=finit, flen=flen, datadir=datadir)
+    print("Reading obs")
     obs = vobs(period=period, flen=flen, finit=finit, datadir=os.path.join(datadir,'OBS')) #note: vobs only every 24 h
 
     date_vobs=ec9.dates[0][0:8]+ec9.dates[0][10:12]
@@ -125,5 +127,11 @@ if __name__ == '__main__':
         if isinstance(ec9.data_synop[date],pd.DataFrame) and isinstance(obs.data_synop[date],pd.DataFrame):
             print("Merging for date %s"%date)
             merged_df = merge_synop(obs.data_synop[date],ec9.data_synop[date],var)
-            write_var(odir,var,merged_df,date,finit)
+            write_var(odir,model,var,merged_df,date,finit)
+        elif not isinstance(ec9.data_synop[date],pd.DataFrame):
+            print("data missing for model on %s"%date)
+        elif not isinstance(obs.data_synop[date],pd.DataFrame):
+            print("data missinf for obs on %s"%date)
+        else:
+            print("no data for model or obs")
 

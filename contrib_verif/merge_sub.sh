@@ -17,15 +17,14 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #fi: init times
 #yymm : possible command line option here. calculate num of days in month and set command line args below
 #yymm=$1
-yy=2019
+yy=2016
 logfile=merge_${yy}.log
 wrkdir=/perm/ms/dk/nhd/scripts_verif/contrib_verif
 var='TT'
-model='EC9'
+model='carra'
 cd $wrkdir
 for mm in 06; do
     for dd in 01 11 21; do
-    #for dd in 21; do
     let df=dd+9
     df=`printf "%02d\n" $df`
     echo "Doing period: $yy${mm}$dd-$yy$mm$df"

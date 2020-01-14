@@ -19,8 +19,6 @@ def check_streams_availability(stream,period,datadir):
      period = period.split('-')
      date_ini=datetime.datetime.strptime(period[0],'%Y%m%d')
      date_end=datetime.datetime.strptime(period[1],'%Y%m%d')
-     print(date_ini)
-     print(date_end)
      dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
      model_dates=[datetime.datetime.strftime(date,'%Y%m%d') for date in dates]
      stream='_'.join(['carra',stream])
@@ -38,13 +36,9 @@ def check_streams_availability(stream,period,datadir):
          for init in init_expected:
              if init in ['00', '12']:
                  for hour in fhours_long:
-                     fname=''.join(['vfld',stream,date,init,str(hour).zfill(2)])
-                     ifile=os.path.join(vflddir,fname)
                      dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
              else:
                  for hour in fhours_short:
-                     fname=''.join(['vfld',stream,date,init,str(hour).zfill(2)])
-                     ifile=os.path.join(vflddir,fname)
                      dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
      dates_pass=[]
      dates_miss=[]
@@ -53,12 +47,12 @@ def check_streams_availability(stream,period,datadir):
              dates_pass.append(dtg)
          else:
              dates_miss.append(dtg)
-     return dates_pass, dates_miss
+     return dtg_expected, dates_pass, dates_miss
 
 if __name__ == "__main__":
     period='20160601-20160630'
     datadir='/scratch/ms/dk/nhz/oprint/'
-    dates_found,dates_notfound = check_streams_availability('IGB',period,datadir)
+    dtg_valid, dates_found,dates_notfound = check_streams_availability('IGB',period,datadir)
     print(dates_found)
     print('-------------')
     print(dates_notfound)

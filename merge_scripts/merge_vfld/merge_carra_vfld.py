@@ -111,8 +111,6 @@ if __name__ == '__main__':
                                 type=str, default='19980101-19980101', required=False)
     parser.add_argument('-fl','--flen',metavar='Forecast length (HH)',
                                 type=int, default=31, required=False)
-    parser.add_argument('-fi','--finit',metavar='Forecast init times. One value or list separated by commans (00,06,12,18)',
-                                type=str, default='00,06,12,18', required=False)
     parser.add_argument('-dvfl','--vfld_dir',metavar='Path of the vfld directory',
                                 type=str, default='/scratch/ms/dk/nhz/oprint/', required=False)
     parser.add_argument('-dout','--out_dir',metavar='Path of the output directory',
@@ -145,7 +143,6 @@ if __name__ == '__main__':
     outdir  = args.out_dir
     datadir = args.vfld_dir
     flen    = args.flen
-    finit   = args.finit
     log_file = args.log_file
     carra_branch = args.carra_branch
     force_write = args.force_write #True # Force writing. Only for debugging purposes
@@ -157,9 +154,9 @@ if __name__ == '__main__':
     ts_vfld=vt()        
     forbidden_dates = ts_vfld.timestamps.simtimes.tolist() #which dates already processed
 
-    igb = vf(model=carra_branch+'_IGB', period=period, finit=finit, flen=flen, datadir=datadir)
+    igb = vf(model=carra_branch+'_IGB', period=period, flen=flen, datadir=datadir)
     logger.info(carra_branch+"_IGB data loaded")
-    ne = vf(model=carra_branch+'_NE', period=period, finit=finit, flen=flen, datadir=datadir)
+    ne = vf(model=carra_branch+'_NE', period=period, flen=flen, datadir=datadir)
     logger.info(carra_branch+"_NE data loaded")
     models=[igb, ne] #NOTE: order is important here, since I will decide to keep 
                      #last occurrence of duplicated stations after concatenate

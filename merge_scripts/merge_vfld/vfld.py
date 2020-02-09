@@ -21,19 +21,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 class vfld(object):
-    def __init__(self,  model=None, period=None, finit=None,
+    def __init__(self,  model=None, period=None, 
                  flen=None, datadir=None):
         self.model = model
         self.period = period.split('-')
-        self.finit = finit
-        if ',' in self.finit:
-            self.finit=finit.split(',')
-        else:
-            self.finit=[finit]
         self.flen= flen
         self.fhours = list(range(0,flen))
         self.datadir=datadir
-        #ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.finit,self.flen)
         ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.flen)
         self.ifiles_model=ifiles_model
         self.dates = dates_model
@@ -114,7 +108,6 @@ class vfld(object):
                         dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
         return dtg_expected
 
-    #def _locate_files(self,datadir,model,period,finit,flen):
     def _locate_files(self,datadir,model,period,flen):
         '''
         Locate the files to process from each model.
@@ -135,30 +128,6 @@ class vfld(object):
                 ifiles_model.append(ifile)
             else:
                 ifiles_model.append('None')
-        #dtgs=[]
-        #for date in model_dates:
-        #    for init_hour in self.finit:
-        #        for hour in range(0,flen):
-        #            dtgs.append(''.join([date,init_hour,str(hour).zfill(2)]))
-        #            if model != 'tasii':
-        #                fname=''.join(['vfld',model,date,init_hour,str(hour).zfill(2)])
-        #                fdir='/'.join([datadir,model])
-        #                ifile=os.path.join(fdir,fname)
-        #                if os.path.exists(ifile):
-        #                    ifiles_model.append(ifile)
-        #                else:
-        #                    ifiles_model.append('None')
-        #            elif model == 'tasii':
-        #                dtgtas=datetime.datetime.strptime(date+init_hour,'%Y%m%d%H') - datetime.timedelta(seconds=10800)
-        #                dtgtas = datetime.datetime.strftime(dtgtas,'%Y%m%d%H')
-        #                hour3=str(hour+3).zfill(2)
-        #                fname=''.join(['vfld',model,dtgtas,hour3])
-        #                fdir='/'.join([datadir,model])
-        #                ifile=os.path.join(fdir,fname)
-        #                if os.path.exists(ifile):
-        #                    ifiles_model.append(ifile)
-        #                else:
-        #                    ifiles_model.append('None')
         if (len(ifiles_model) == 0) or (len(set(ifiles_model)) == 1): # if all elements equal all None!
             logger.info("WARNING: no %s data found for dates %s"%(model,model_dates))
             logger.info(ifiles_model)
@@ -237,7 +206,6 @@ class vfld_monitor(object):
         self.df_temp = df_temp # pandas dataframe with temp data
         self.outdir = outdir
         self.synop_cols = self.df_synop.columns
-        #self.date = date #date in format YYYYMMDDFINITHH
         self.df_out = self._format_data(df_synop,df_temp)
         
     def _format_data(self,df_synop,df_temp):
@@ -322,15 +290,12 @@ if __name__ == '__main__':
     models=[]
     model='tasii'
     period='20190601-20190601'
-    #finit='00,06,12,18'
-    finit='00'
     flen=52
     datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
     #datadir='/netapp/dmiusr/aldtst/vfld'
-    tasii = vfld(model=model, period=period, finit=finit, flen=52, datadir=datadir)
-    sgl40h11 = vfld(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
-    #nuuk750 = vfld(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
-    qaan40h11 = vfld(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    tasii = vfld(model=model, period=period, flen=52, datadir=datadir)
+    sgl40h11 = vfld(model='sgl40h11', period=period, flen=52, datadir=datadir)
+    qaan40h11 = vfld(model='qaan40h11', period=period, flen=52, datadir=datadir)
     #models=[tasii, sgl40h11, nuuk750, qaan40h11]
     models=[tasii, sgl40h11, qaan40h11]
     date=tasii.dates[0]

@@ -64,9 +64,9 @@ def read_current_state(hfile,period,stream):
     cols=['expId','Current assimilated date','End date of stream',
           'Completion date', 'Avg. throughput (7d)',
           'Avg. throughput (30d)']
-    url='https://hirlam.org/portal/CARRA/Progress/current_state_sims.html'
-    url='/home/cap/current_state_sims.html'
-    import urllib.request
+    #url='https://hirlam.org/portal/CARRA/Progress/current_state_sims.html'
+    #url='/home/cap/current_state_sims.html'
+    #import urllib.request
     f = open(hfile,'r') #'/home/cap/current_state_sims.html', 'r')
     s=f.read()
     soup = BeautifulSoup(s,"lxml")
@@ -86,6 +86,8 @@ def read_current_state(hfile,period,stream):
         date1=datetime.strptime(row[1],"%Y%m%d%H")
         #print(row[0])
         if 'B' not in num:
+            if '*' in num: #an asterisk will appear in table sometimes
+                num = num.replace('*','')
             dom_edate[num] = np.append(dom_edate[num],date1)
         #cur_dtg[row[0]]=row[1]
         #end_dtg[row[0]]=row[2]
@@ -128,7 +130,8 @@ def extract_ecfs(dom,stream,yyyymm,tmpdir):
         ret_ls=subprocess.check_output(cmd_ls,shell=True)
         ret_copy=subprocess.check_output(cmd_copy,shell=True)
     except subprocess.CalledProcessError as err:
-        print("Error in calling command %s"%cmd)
+        print("Error in calling command %s"%cmd_ls)
+        print("Error in calling command %s"%cmd_copy)
         print("Hint: maybe not the correct stream number???")
         print("Exiting")
         sys.exit()
@@ -163,9 +166,9 @@ def copy_local(stream,yyyymm):
 
 
 if __name__ == "__main__":
-    period='20161001-20161031'
+    period='19970801-19970831'
     #need to indicate which stream if I want to copy!!
-    stream='3' #CHANGE
+    stream='2' #CHANGE
     datadir='/scratch/ms/dk/nhz/oprint/'
     tmpdir='/scratch/ms/dk/nhx/carra_temp'
     tmpdir='/scratch/ms/dk/nhd/tmp/carra_temp'

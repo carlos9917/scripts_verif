@@ -1,11 +1,7 @@
 #!/bin/bash 
 #SBATCH --error=/perm/ms/dk/nhd/carra_merge_vfld/runout-%J.err
 #SBATCH --output=/perm/ms/dk/nhd/carra_merge_vfld/runout-%J.out
-##SBATCH --workdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
-
-##SBATCH --error=/scratch/ms/dk/nhx/oprint/runout/runout-%J.err
-##SBATCH --output=/scratch/ms/dk/nhx/oprint/runout/runout-%J.out
-#SBATCH --job-name=ext200907
+#SBATCH --job-name=ext199708
 
 
 #Example script to combine carra NE and IGB data

@@ -21,19 +21,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 class vfld(object):
-    def __init__(self,  model=None, period=None, finit=None,
+    def __init__(self,  model=None, period=None, 
                  flen=None, datadir=None):
         self.model = model
         self.period = period.split('-')
-        self.finit = finit
-        if ',' in self.finit:
-            self.finit=finit.split(',')
-        else:
-            self.finit=[finit]
         self.flen= flen
         self.fhours = list(range(0,flen))
         self.datadir=datadir
-        ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.finit,self.flen)
+        ifiles_model,dates_model = self._locate_files(self.datadir,self.model,self.period,self.flen)
         self.ifiles_model=ifiles_model
         self.dates = dates_model
         #self.dates=self._get_dates_from_files(self.ifiles_model)
@@ -93,7 +88,27 @@ class vfld(object):
     #    print("dates from files %s "%' '.join(dates))        
     #    return dates
 
-    def _locate_files(self,datadir,model,period,finit,flen):
+    def _dtg_expected_carra(self,flen,dates):
+        '''
+           return dates expected to be found in the carra streams
+        '''
+        #init times: 00 and 12. Forecast hours expected from 0-30. Every 1h until 6, then every 3 h
+        #init times: 03,06,09,15,18,21. Forecast hours expected from 0-3. Every 1h.
+        fhours_long=[str(i).zfill(2) for i in range(0,7)] + [str(i).zfill(2) for i in range(9,flen,3)]
+        fhours_short=[str(i).zfill(2) for i in range(0,4)]
+        init_expected = [str(i).zfill(2) for i in range(0,22,3)]
+        dtg_expected=[]
+        for date in dates:
+            for init in init_expected:
+                if init in ['00', '12']:
+                    for hour in fhours_long:
+                        dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+                else:
+                    for hour in fhours_short:
+                        dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+        return dtg_expected
+
+    def _locate_files(self,datadir,model,period,flen):
         '''
         Locate the files to process from each model.
         period = YYYYMMDD_beg-YYYYMMDD_end
@@ -104,33 +119,18 @@ class vfld(object):
         dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
         model_dates=[datetime.datetime.strftime(date,'%Y%m%d') for date in dates]
         ifiles_model = []
-        dtgs=[]
-
-        for date in model_dates:
-            for init_hour in self.finit:
-                for hour in range(0,flen):
-                    dtgs.append(''.join([date,init_hour,str(hour).zfill(2)]))
-                    if model != 'tasii':
-                        fname=''.join(['vfld',model,date,init_hour,str(hour).zfill(2)])
-                        fdir='/'.join([datadir,model])
-                        ifile=os.path.join(fdir,fname)
-                        if os.path.exists(ifile):
-                            ifiles_model.append(ifile)
-                        else:
-                            ifiles_model.append('None')
-                    elif model == 'tasii':
-                        dtgtas=datetime.datetime.strptime(date+init_hour,'%Y%m%d%H') - datetime.timedelta(seconds=10800)
-                        dtgtas = datetime.datetime.strftime(dtgtas,'%Y%m%d%H')
-                        hour3=str(hour+3).zfill(2)
-                        fname=''.join(['vfld',model,dtgtas,hour3])
-                        fdir='/'.join([datadir,model])
-                        ifile=os.path.join(fdir,fname)
-                        if os.path.exists(ifile):
-                            ifiles_model.append(ifile)
-                        else:
-                            ifiles_model.append('None')
-        if len(ifiles_model) == 0:
-            logger.info("WARNING: data not found for dates %s"%self.dates)
+        dtgs=self._dtg_expected_carra(flen,model_dates)
+        for dtg in dtgs:
+            fname=''.join(['vfld',model,dtg])
+            fdir='/'.join([datadir,model])
+            ifile=os.path.join(fdir,fname)
+            if os.path.exists(ifile):
+                ifiles_model.append(ifile)
+            else:
+                ifiles_model.append('None')
+        if (len(ifiles_model) == 0) or (len(set(ifiles_model)) == 1): # if all elements equal all None!
+            logger.info("WARNING: no %s data found for dates %s"%(model,model_dates))
+            logger.info(ifiles_model)
         logger.debug("first file for model %s: %s"%(self.model,ifiles_model[0]))
         logger.debug("last file for model %s: %s"%(self.model,ifiles_model[-1]))
         return ifiles_model, dtgs
@@ -206,7 +206,6 @@ class vfld_monitor(object):
         self.df_temp = df_temp # pandas dataframe with temp data
         self.outdir = outdir
         self.synop_cols = self.df_synop.columns
-        #self.date = date #date in format YYYYMMDDFINITHH
         self.df_out = self._format_data(df_synop,df_temp)
         
     def _format_data(self,df_synop,df_temp):
@@ -240,7 +239,7 @@ class vfld_monitor(object):
         #declaring these values for header as strings is the only way I can ensure these numbers are written as non-float
         header_synop=[str(ns_synop), str(ns_temp), str(4)]
         df_out=pd.DataFrame(columns=colss) 
-        if 'FI' in colss:
+        if 'FI 0' in colss:
             nvars_synop = df_synop.shape[1]-3 # subtract: stationId,lat,lon
             varlist_synop=colss[3:]  
             nvars=len(colss[3:])
@@ -254,7 +253,11 @@ class vfld_monitor(object):
         for var in varlist_synop:
             df_out = df_out.append({'stationId':var},ignore_index=True)
         df_out = df_out.append(df_synop,ignore_index=True)    
-        df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
+        if self.model in ['carra','carra_beta1','carra_beta2','carra_rc1']:
+            logger.debug("carra or carra branch (%s): Setting pressure levels to 10"%self.model)
+            df_out = df_out.append({'stationId':str(10)},ignore_index=True) #10 pressure levels for carra (constant)
+        else:
+            df_out = df_out.append({'stationId':str(11)},ignore_index=True) #11 pressure levels (constant)
         df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
         for var in colst:
             df_out = df_out.append({'stationId':var+' 0'},ignore_index=True) #include accumulation time for temp vars
@@ -287,15 +290,12 @@ if __name__ == '__main__':
     models=[]
     model='tasii'
     period='20190601-20190601'
-    #finit='00,06,12,18'
-    finit='00'
     flen=52
     datadir='/data/cap/code_development_hpc/scripts_verif/merge_scripts/merge_vfld/example_data'
     #datadir='/netapp/dmiusr/aldtst/vfld'
-    tasii = vfld(model=model, period=period, finit=finit, flen=52, datadir=datadir)
-    sgl40h11 = vfld(model='sgl40h11', period=period, finit=finit, flen=52, datadir=datadir)
-    #nuuk750 = vfld(model='nuuk750', period=period, finit=finit, flen=52, datadir=datadir)
-    qaan40h11 = vfld(model='qaan40h11', period=period, finit=finit, flen=52, datadir=datadir)
+    tasii = vfld(model=model, period=period, flen=52, datadir=datadir)
+    sgl40h11 = vfld(model='sgl40h11', period=period, flen=52, datadir=datadir)
+    qaan40h11 = vfld(model='qaan40h11', period=period, flen=52, datadir=datadir)
     #models=[tasii, sgl40h11, nuuk750, qaan40h11]
     models=[tasii, sgl40h11, qaan40h11]
     date=tasii.dates[0]

@@ -7,7 +7,9 @@
 # and the on_demand models
 # sc_ondemand, db_ondemand, nk_ondemand, qa_ondemand
 #
-# NOTE: Script assumes models are NOT overlapping each other!
+# If the data is overlapping, then last model in the list
+# will take precedence. See below for CLI arguments.
+#
 import logging
 import pandas as pd
 import os
@@ -22,12 +24,32 @@ import subprocess
 import re
 from vfld import vfld as vf
 from vfld import vfld_monitor as monitor
+import collections
 
 #this to avoid issues with plotting via qsub
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
+
+def drop_duplicates(df_temp):
+    '''
+    Drop duplicate stations in the df_temp frame.
+    '''
+    #identify the station names
+    temp_stations=[st for st in df_temp['PP'].values if '.' not in st]
+    #idenfity the index of each station
+    temp_st_loc=[df_temp.loc[df_temp['PP']==st].index for st in df_temp['PP'] if '.' not in st]
+    #repeated stations:
+    repeated =[item for item, count in collections.Counter(temp_stations).items() if count > 1]
+    to_del=[]
+    for st in repeated:
+        check_ind=df_temp.loc[df_temp['PP']==st].index.tolist()
+        for ch in check_ind[1:]: # keep only first 
+            to_del = to_del + list(range(ch,ch+11))
+    if len(to_del) != 0:        
+        df_temp.drop(to_del,inplace=True)
+
 
 def check_plot(df,fout):
     import seaborn as sns
@@ -66,7 +88,97 @@ def setup_logger(logFile,outScreen=False):
     if outScreen:
         logger.addHandler(ch) # Turn on to also log to screen
 
+def main(args):
 
+    try:
+        os.makedirs(args.out_dir)
+    except OSError:
+        print("%s directory already exists!"%args.out_dir)
+
+    period = args.period    
+    outdir  = args.out_dir
+    datadir = args.vfld_dir
+    flen    = args.flen
+    merge_type = args.merge_type
+    output_name = args.output_name
+    if ',' in args.merge_models:
+        mmodels = args.merge_models.split(',')
+    else:
+        print("Please provide more than one model: %s"%arg.merge_models)
+        print("Format: 'model1,model2...'")
+        sys.exit()
+
+    logFile=os.path.join(outdir,'merge.log')
+    print("All remaining screen output will be written to %s"%logFile)
+    setup_logger(logFile,outScreen=False)
+
+    #read data for each model
+    models = mmodels
+    #models=["tasii", "sgl40h11", "nuuk750", "qaan40h11",
+    #        "sc_ondemand", "db_ondemand", "nk_ondemand", "qa_ondemand" ]
+    models_data=OrderedDict()
+    for model in models:
+        models_data[model] = vf(model=model, period=period, flen=flen, datadir=datadir)
+        logger.info("Data for "+model+" loaded")
+    #now merge the whole data. Choose a model that will contain all dates!
+    #Using the last model, since this will be the one setting the order in overlapping models
+    logger.info("Looping through dates from model %s"%models[-1])
+    for date in models_data[models[0]].dates:
+        logger.info("Merging date %s"%date)
+        #Only collect those dates which contain any data:
+        frames_synop = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_synop[date],pd.DataFrame)]
+        models_avail = [f.model for f in frames_synop]
+        logger.info("Number of models with synop data for %s: %d"%(date,len(frames_synop)))
+        if len(frames_synop) < 2:
+            logger.info("Not enough models available (%d). Jumping to next date"%len(frames_synop))
+            continue
+        else:
+            logger.info("Available models: %s"%' '.join(models_avail))
+        frames_temp = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_temp[date],pd.DataFrame)]
+        dfs=[f.data_synop[date] for f in frames_synop]
+        dft=[f.data_temp[date] for f in frames_temp]
+
+        if len(dfs) >= 2:
+            if merge_type == 'overlap':
+                logger.info("Overlapping models. Keeping SYNOP data from %s if stations repeated"%models[-1])
+                df_synop = pd.concat(dfs,sort=False)
+                df_synop = df_synop.drop_duplicates(['stationId'],keep='last') #keeping last model
+                logger.info("Passed SYNOP")
+            elif merge_type == 'nonoverlap':
+                logger.info("Non-overlapping models. Keeping all SYNOP data")
+                df_synop = pd.concat(dfs,sort=False)
+            else:
+                logger.error("Wrong option for merge_type: %s"%merge_type)
+                logger.error("Exit program")
+                sys.exit()
+        else:
+            logger.info("No data for df_synop: %d"%len(dfs))
+
+        if len(dft) >= 2:
+            if merge_type == 'overlap':
+                logger.info("Overlapping models. Keeping TEMP data from %s if stations repeated"%models[-1])
+                df_temp = pd.concat(dft,ignore_index=True)
+                drop_duplicates(df_temp) #NOTE: this is an internal function! Not pandas
+                logger.info("Passed TEMP")
+            elif merge_type=='nonoverlap':
+                logger.info("Non-overlapping models. Keeping all TEMP data")
+                df_temp = pd.concat(dft)
+            else:
+                logger.error("Wrong option for %s"%merge_type)
+                logger.error("Exit program")
+                sys.exit()
+        else:    
+            logger.info("No data for df_temp: %d"%len(dft))
+        if len(dfs) >= 2 and len(dft) >= 2:    
+            mon_save= monitor(model=output_name,date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
+            mon_save.write_vfld()
+            del mon_save
+            del df_synop
+            del df_temp
+        else:
+            logger.ingo("SYNOP data available for only %d model. No merging done"%len(dfs))
+            logger.ingo("TEMP data available for only %d model. No merging done"%len(dft))
+    logger.info("Merging done")
 if __name__ == '__main__':
     #NOTE: limit period to 1 month at a time.
     # Otherwise the class will become huge!
@@ -74,7 +186,7 @@ if __name__ == '__main__':
     import argparse
     from argparse import RawTextHelpFormatter
     parser = argparse.ArgumentParser(description='''Combine all Greenland 750 m vfld data
-                        Example usage: python merge_750models.py -pe 20190101-20190101 -fl 52 -fi 00,06,12,18 -dvfl /netapp/dmiusr/aldtst/vfld -dout /home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test/gl ''',formatter_class=RawTextHelpFormatter)
+                        Example usage: python merge_on_demand_750.py -pe 20190101-20190101 -fl 52 -dvfl /netapp/dmiusr/aldtst/vfld -dout /home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test/gl ''',formatter_class=RawTextHelpFormatter)
 
     parser.add_argument('-pe','--period',metavar='Period to process (YYYYMMDD-YYYYMMDD)',
                                 type=str, default='20190101-20190101', required=False)
@@ -88,72 +200,19 @@ if __name__ == '__main__':
                                 type=str, default='/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_750_test/gl', required=False)
     parser.add_argument('-mm','--merge_models',metavar='List of models I want to merge. String separated by commas',
                                 type=str, default='tasii,sgl40h11', required=False)
-    parser.add_argument('-mode','--merging_mode',metavar='Merging mode: overlap or nonoverlap',
+    parser.add_argument('-mt','--merge_type',metavar='Merge type: overlap or nonoverlap. If overlap, last model on the list takes precedence',
                                 type=str, default='nonoverlap', required=False)
+    parser.add_argument('-on','--output_name',metavar='Output name. The string to be used after vfld in the name files',
+                                type=str, default=None, required=True)
 
     args = parser.parse_args()
 
 
     try:
         print("Arguments: %s"%args)
+        main(args)
     except:
         print("Error. Exiting")
         parser.print_help()
         sys.exit(0)
  
-    try:
-        os.makedirs(args.out_dir)
-    except OSError:
-        print("%s directory already exists!"%args.out_dir)
-
-    period = args.period    
-    outdir  = args.out_dir
-    datadir = args.vfld_dir
-    flen    = args.flen
-    if ',' in args.merge_models:
-        mmodels = arg.merge_models.split(',')
-    else:
-        print("Please provide more than one model: %s"%arg.merge_models)
-        print("Format: 'model1,model2...'")
-        sys.exit()
-    print("arguments to use: %s"%args)
-    logFile=os.path.join(outdir,'merge.log')
-    print("All screen output will be written to %s"%logFile)
-    setup_logger(logFile,outScreen=False)
-    #read data for each model
-    models = mmodels
-    #models=["tasii", "sgl40h11", "nuuk750", "qaan40h11",
-    #        "sc_ondemand", "db_ondemand", "nk_ondemand", "qa_ondemand" ]
-    models_data=OrderedDict()
-    for model in models:
-        models_data[model] = vf(model=model, period=period, flen=flen, datadir=datadir)
-        logger.info("model "+model+" done")
-    logger.info("merge synop data from all stations (non-overlapping assumed)")
-
-    #now merge the whole data. Choose a model that will contain all dates!
-    print("Looping through dates from model %s"%models[0])
-    for date in models_data[models[0]].dates:
-        logger.debug("Merging date %s"%date)
-        #Only collect those dates which contain any data:
-        frames_synop = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_synop[date],pd.DataFrame)]
-        models_avail = [f.model for f in frames_synop]
-        logger.debug("Number of models with synop data for %s: %d \n"%(date,len(frames_synop)))
-        logger.debug("Available models: %s"%' '.join(models_avail))
-        frames_temp = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_temp[date],pd.DataFrame)]
-        dfs=[f.data_synop[date] for f in frames_synop]
-        dft=[f.data_temp[date] for f in frames_temp]
-        if len(dfs) >= 2:
-            df_synop = pd.concat(dfs,sort=False)
-            #fout=os.path.join(outdir,'synop_stations_'+date+'.png')
-        else:
-            logger.debug("No data for df_synop: %d"%len(dfs))
-        if len(dft) >= 2:
-            df_temp = pd.concat(dft)
-        else:    
-            logger.debug("No data for df_temp: %d"%len(dft))
-        if len(dfs) >= 2 and len(dft) >= 2:    
-            mon_save= monitor(model='gl_ondemand',date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
-            mon_save.write_vfld()
-            del mon_save
-            del df_synop
-            del df_temp

@@ -152,7 +152,9 @@ def main(args):
                 logger.error("Exit program")
                 sys.exit()
         else:
-            logger.info("No data for df_synop: %d"%len(dfs))
+            logger.info("Not enough data for df_synop: %d"%len(dfs))
+            df_synop = pd.DataFrame(columns = ['a','b','c']) #empty dataframe
+
 
         if len(dft) >= 2:
             if merge_type == 'overlap':
@@ -167,17 +169,23 @@ def main(args):
                 logger.error("Wrong option for %s"%merge_type)
                 logger.error("Exit program")
                 sys.exit()
+        elif len(dft) == 1:
+            logger.info("Only one model has data for df_temp: %d"%len(dft))
+            df_temp = pd.concat(dft) #,ignore_index=True)
         else:    
-            logger.info("No data for df_temp: %d"%len(dft))
-        if len(dfs) >= 2 and len(dft) >= 2:    
+            logger.info("Not enough data for df_temp: %d"%len(dft))
+            df_temp = pd.DataFrame(columns = ['a','b','c']) #empty dataframe
+
+        if not df_synop.empty and not df_temp.empty:
+            logger.info("Writing the data (df_synop.size:%d, df_temp.size:%d)"%(df_synop.size,df_temp.size))
             mon_save= monitor(model=output_name,date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
             mon_save.write_vfld()
             del mon_save
             del df_synop
             del df_temp
         else:
-            logger.ingo("SYNOP data available for only %d model. No merging done"%len(dfs))
-            logger.ingo("TEMP data available for only %d model. No merging done"%len(dft))
+            logger.info("SYNOP data available for only %d model. No merging done"%len(dfs))
+            logger.info("TEMP data available for only %d model. No merging done"%len(dft))
     logger.info("Merging done")
 if __name__ == '__main__':
     #NOTE: limit period to 1 month at a time.

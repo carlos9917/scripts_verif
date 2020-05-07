@@ -38,16 +38,22 @@ scrdir=/home/cap/verify/scripts_verif/merge_scripts/merge_vfld
 cd $scrdir
 #1. Merge the models sc_ondemand, db_ondemand, nk_ondemand, qa_ondemand. Produce model ondemand_
 echo "Merge sc_ondemand, db_ondemand, nk_ondemand, qa_ondemand"
-$py3 ./merge_on_demand_750.py -pe 20200401-20200430 -fl 24 -dvfl $vfldir -dout $outdir/gl_ondemand -mm "sc_ondemand,db_ondemand,nk_ondemand,qa_ondemand"  -on "gl_ondemand"
+outmodel=gl_ondemand
+$py3 ./merge_on_demand_750.py -pe 20200401-20200430 -fl 24 -dvfl $vfldir -dout $outdir/$outmodel -mm "sc_ondemand,db_ondemand,nk_ondemand,qa_ondemand"  -on $outmodel
+echo "$outmodel done"
 
 #2. Merge the models IGB,tasii,sgl40h11. Produce gl_opr
 echo "Merge igb40h11,tasii,sgl40h11"
 echo "Merging precedence: sgl40h11 replaces any repeated stations"
-$py3 ./merge_on_demand_750.py -pe 20200401-20200430 -fl 24 -dvfl $vfldir -dout $outdir/gl_opr -mm "igb40h11,tasii,sgl40h11"  -mt 'overlap' -on "gl_opr"
+outmodel=gl_opr
+$py3 ./merge_on_demand_750.py -pe 20200401-20200430 -fl 24 -dvfl $vfldir -dout $outdir/$outmodel -mm "igb40h11,tasii,sgl40h11"  -mt 'overlap' -on $outmodel
+echo "$outmodel done"
 
 #3. Merge the models 
 #gl_hires (IGB + TASII + SGL40h11 +  "sc_ondemand", "db_ondemand", "nk_ondemand", "qa_ondemand" 
 #In other words,  merging: gl_opr and gl_ondemand. 
 echo "Merge gl_opr and gl_ondemand"
 echo "Merging precedence: gl_ondemand replaces any repeated stations"
-$py3 ./merge_on_demand_750.py -pe 20200401-20200430 -fl 24 -dvfl $outdir -dout $outdir/ondemand -mm "gl_opr,gl_ondemand"  -mt 'overlap' -on "ondemand" 
+outmodel=gl_hires
+$py3 ./merge_on_demand_750.py -pe 20200401-20200430 -fl 24 -dvfl $outdir -dout $outdir/$outmodel -mm "gl_opr,gl_ondemand"  -mt 'overlap' -on $outmodel
+echo "$outmodel done"

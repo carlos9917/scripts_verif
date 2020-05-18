@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 class vfld(object):
     def __init__(self,  model=None, period=None, 
-                 flen=None, datadir=None):
+                 flen=None, datadir=None, stream='CARRA'):
+        self.stream = stream
         self.model = model
         self.period = period.split('-')
         self.flen= flen
@@ -108,6 +109,28 @@ class vfld(object):
                         dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
         return dtg_expected
 
+    def _dtg_expected_dmi(self,model,flen,dates):
+        '''
+           return dates expected to be found in the carra streams
+        '''
+        fhours=[str(i).zfill(2) for i in range(0,flen+1)]
+        init_expected = [str(i).zfill(2) for i in range(0,22,3)]
+        init_reduced = ['03','09','15','21']
+        special_models=['tasii','db_ondemand','nk_ondemand']
+        dtg_expected=[]
+        for date in dates:
+            if model in special_models:
+                logger.info("Using tasii-like model %s for calculating expected dtgs"%model)
+                for init in init_reduced:
+                    for hour in fhours:
+                        dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+            else:    
+                logger.info("Using standard on-demand model %s for calculating expected dtgs"%model)
+                for init in init_expected:
+                    for hour in fhours:
+                        dtg_expected.append(''.join([date,init,str(hour).zfill(2)]))
+        return dtg_expected
+
     def _locate_files(self,datadir,model,period,flen):
         '''
         Locate the files to process from each model.
@@ -119,7 +142,14 @@ class vfld(object):
         dates = [date_ini + datetime.timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
         model_dates=[datetime.datetime.strftime(date,'%Y%m%d') for date in dates]
         ifiles_model = []
-        dtgs=self._dtg_expected_carra(flen,model_dates)
+        if self.stream=='CARRA':
+            dtgs=self._dtg_expected_carra(flen,model_dates)
+        elif self.stream=='DMI':
+            dtgs=self._dtg_expected_dmi(model,flen,model_dates)
+        else:
+            logger.error("Stream %s unknown!"%self.stream)
+            logger.error("Exiting program...")
+            sys.exit()
         for dtg in dtgs:
             fname=''.join(['vfld',model,dtg])
             fdir='/'.join([datadir,model])

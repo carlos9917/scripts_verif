@@ -32,6 +32,28 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
 
+def check_frames_synop(models_data,date):
+    '''
+    check if there's synop data for this date for all models
+    '''
+    frames_synop = []
+    for m in models_data.keys():
+        if date in models_data[m].dates:
+            if isinstance(models_data[m].data_synop[date],pd.DataFrame):
+                frames_synop.append(models_data[m])
+    return frames_synop        
+
+def check_frames_temp(models_data,date):
+    '''
+    check if there's temp data for this date for all models
+    '''
+    frames_temp=[]
+    for m in models_data.keys():
+        if date in models_data[m].dates:
+            if isinstance(models_data[m].data_temp[date],pd.DataFrame):
+                frames_temp.append(models_data[m])
+    return frames_temp
+
 def drop_duplicates(df_temp):
     '''
     Drop duplicate stations in the df_temp frame.
@@ -118,15 +140,16 @@ def main(args):
     #        "sc_ondemand", "db_ondemand", "nk_ondemand", "qa_ondemand" ]
     models_data=OrderedDict()
     for model in models:
-        models_data[model] = vf(model=model, period=period, flen=flen, datadir=datadir)
+        models_data[model] = vf(model=model, period=period, flen=flen, datadir=datadir, stream='DMI')
         logger.info("Data for "+model+" loaded")
     #now merge the whole data. Choose a model that will contain all dates!
     #Using the last model, since this will be the one setting the order in overlapping models
     logger.info("Looping through dates from model %s"%models[-1])
-    for date in models_data[models[0]].dates:
+    for date in models_data[models[-1]].dates:
         logger.info("Merging date %s"%date)
         #Only collect those dates which contain any data:
-        frames_synop = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_synop[date],pd.DataFrame)]
+        #frames_synop = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_synop[date],pd.DataFrame)]
+        frames_synop = check_frames_synop(models_data,date)
         models_avail = [f.model for f in frames_synop]
         logger.info("Number of models with synop data for %s: %d"%(date,len(frames_synop)))
         if len(frames_synop) < 2:
@@ -134,7 +157,9 @@ def main(args):
             continue
         else:
             logger.info("Available models: %s"%' '.join(models_avail))
-        frames_temp = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_temp[date],pd.DataFrame)]
+        #frames_temp = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_temp[date],pd.DataFrame)]
+        frames_temp=check_frames_temp(models_data,date)
+        #collect all frames with data for this date to concatenate afterwards
         dfs=[f.data_synop[date] for f in frames_synop]
         dft=[f.data_temp[date] for f in frames_temp]
 

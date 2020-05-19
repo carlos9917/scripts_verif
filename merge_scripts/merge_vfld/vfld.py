@@ -171,7 +171,15 @@ class vfld(object):
         '''
         #Read this file to determine number of variables in file:
         first_two=[]
-        with open(ifile) as f:
+        try:
+            with open(ifile,'r') as f:
+                logger.debug("File %s readable"%ifile)
+        except IOError:
+            logger.error("ERROR: File %s exists, but I cannot read it!"%ifile)
+            logger.error("I am out!")
+            logger.error("TODO: Fix this")
+            sys.exit()
+        with open(ifile,'r') as f:
             first_two.extend(str(f.readline()).rstrip() for i in range(2))
         nsynop_vars=int(first_two[-1]) # number of variables in synop data
         ntemp_stations=int(first_two[-1]) # number of temp stations in file
@@ -219,7 +227,6 @@ class vfld(object):
             data_synop = 'None'
             data_temp = 'None'
             accum_synop = 'None'
-    
         return data_synop, data_temp, accum_synop
 
 class vfld_monitor(object):

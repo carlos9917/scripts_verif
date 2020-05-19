@@ -130,33 +130,53 @@ def main(args):
         print("Format: 'model1,model2...'")
         sys.exit()
 
-    logFile=os.path.join(outdir,'merge.log')
+    logFile=os.path.join(outdir,args.log_file)
     print("All remaining screen output will be written to %s"%logFile)
     setup_logger(logFile,outScreen=False)
+    
 
     #read data for each model
     models = mmodels
+    #This dictionary if for checking available data
+    merged_models=OrderedDict()
+    merged_models['available date']=np.array([])
+
     #models=["tasii", "sgl40h11", "nuuk750", "qaan40h11",
     #        "sc_ondemand", "db_ondemand", "nk_ondemand", "qa_ondemand" ]
+    #
     models_data=OrderedDict()
+
     for model in models:
         models_data[model] = vf(model=model, period=period, flen=flen, datadir=datadir, stream='DMI')
         logger.info("Data for "+model+" loaded")
+        #print("will store model %s"%model)
+        merged_models[model] = np.array([]) #this for bookkeepimg later on
+        #print("passed model")
+
     #now merge the whole data. Choose a model that will contain all dates!
     #Using the last model, since this will be the one setting the order in overlapping models
     logger.info("Looping through dates from model %s"%models[-1])
     for date in models_data[models[-1]].dates:
-        logger.info("Merging date %s"%date)
+        logger.info("Attempting to merge date %s"%date)
         #Only collect those dates which contain any data:
         #frames_synop = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_synop[date],pd.DataFrame)]
         frames_synop = check_frames_synop(models_data,date)
         models_avail = [f.model for f in frames_synop]
         logger.info("Number of models with synop data for %s: %d"%(date,len(frames_synop)))
         if len(frames_synop) < 2:
-            logger.info("Not enough models available (%d). Jumping to next date"%len(frames_synop))
+            logger.info("Merge failure: not enough models available (%d). Jumping to next date"%len(frames_synop))
             continue
         else:
             logger.info("Available models: %s"%' '.join(models_avail))
+            # The following will be written to disk as a list of
+            # available models
+            for this_model in models_avail:
+                merged_models[this_model] = np.append(merged_models[this_model],'Present')
+            for this_model in merged_models.keys():
+                if this_model not in models_avail and this_model != 'available date':
+                    merged_models[this_model] = np.append(merged_models[this_model],'Missing')
+            merged_models['available date'] = np.append(merged_models['available date'],date)
+                
         #frames_temp = [models_data[m] for m in models_data.keys() if isinstance(models_data[m].data_temp[date],pd.DataFrame)]
         frames_temp=check_frames_temp(models_data,date)
         #collect all frames with data for this date to concatenate afterwards
@@ -211,6 +231,17 @@ def main(args):
         else:
             logger.info("SYNOP data available for only %d model. No merging done"%len(dfs))
             logger.info("TEMP data available for only %d model. No merging done"%len(dft))
+    #write list of models for debugging
+    #print("before the evaluation")
+    if len(merged_models) > len(models_avail)+1:
+        fout=os.path.join(outdir,'models_available'+period+'.log')
+        logger.info("Writing model availability to %s"%fout)
+        write_models_merged=pd.DataFrame(merged_models,columns=merged_models.keys())
+        write_models_merged.to_csv(fout,sep=' ',index=False)
+    else:
+        logger.info("No matching data available for this period")
+
+
     logger.info("Merging done")
 if __name__ == '__main__':
     #NOTE: limit period to 1 month at a time.
@@ -238,6 +269,8 @@ if __name__ == '__main__':
     parser.add_argument('-on','--output_name',metavar='Output name. The string to be used after vfld in the name files',
                                 type=str, default=None, required=True)
 
+    parser.add_argument('-lg','--log_file',metavar='Log file name',
+                                type=str, default='merge.log', required=False)
     args = parser.parse_args()
 
 

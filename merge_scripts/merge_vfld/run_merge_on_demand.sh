@@ -1,6 +1,6 @@
 #!/bin/bash 
 #PBS -v OMP_NUM_THREADS=1
-#PBS -N 202005_merge
+#PBS -N 202002_merge
 #PBS -l pvmem=20gb
 #PBS -o /data/cap/out
 #PBS -j oe -W umask=022
@@ -23,12 +23,13 @@ source activate py37
 py3=/data/cap/miniconda2/envs/py37/bin/python
 
 #out and in directories:
-outdir=/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_ondemand
+#outdir=/home/cap/verify/scripts_verif/merge_scripts/merge_vfld/merged_ondemand
+outdir=/data/cap/VFLD
 vfldir=/netapp/dmiusr/aldtst/vfld
 scrdir=/home/cap/verify/scripts_verif/merge_scripts/merge_vfld
-date_ini=20200501
-date_end=20200502
-logfile=merge_2005.log
+date_ini=20200211
+date_end=20200211
+logfile=merge_2002.log
 flen=24
 
 # Parameters of the Python script:
@@ -52,7 +53,7 @@ $py3 ./merge_on_demand_750.py -pe ${date_ini}-${date_end} -fl $flen -dvfl $vfldi
 echo "-------------------------"
 echo ">>> $outmodel generated <<<"
 echo "-------------------------"
-#2. Merge the models IGB,tasii,sgl40h11. Produce gl_opr
+2. Merge the models IGB,tasii,sgl40h11. Produce gl_opr
 echo "-----------------------------------------------------------"
 echo "Merge --> igb40h11,tasii,sgl40h11"
 echo "Merging precedence: data from sgl40h11 replaces any repeated stations"
@@ -62,7 +63,6 @@ $py3 ./merge_on_demand_750.py -pe ${date_ini}-${date_end} -fl $flen -dvfl $vfldi
 echo "----------------------------"
 echo ">>> $outmodel generated <<<"
 echo "----------------------------"
-exit
 #3. Merge the models 
 #gl_hires (IGB + TASII + SGL40h11 +  "sc_ondemand", "db_ondemand", "nk_ondemand", "qa_ondemand" 
 #In other words,  merging: gl_opr and gl_ondemand. 

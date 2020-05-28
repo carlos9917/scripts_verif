@@ -32,6 +32,21 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
 
+def save_unavail(models,date,outdir,period,output_name):
+    '''
+    Write out dates with not enough models.
+    This is just for debugging purposes
+    '''
+    fout=os.path.join(outdir,'_'.join(['only_one_present',period,output_name])+'.log')
+    for model in models:
+        if os.path.isfile(fout):
+            with open(fout,'a') as f:
+                f.write("%s %s \n"%(model,date))
+        else:
+            with open(fout,'w') as f:
+                f.write("#model date\n")
+                f.write("%s %s \n"%(model,date))
+
 def check_frames_synop(models_data,date):
     '''
     check if there's synop data for this date for all models
@@ -165,6 +180,8 @@ def main(args):
         logger.info("Number of models with synop data for %s: %d"%(date,len(frames_synop)))
         if len(frames_synop) < 2:
             logger.info("Merge failure: not enough models available (%d). Jumping to next date"%len(frames_synop))
+            if len(models_avail) != 0:
+                save_unavail(models_avail,date,outdir,period,output_name)
             continue
         else:
             logger.info("Available models: %s"%' '.join(models_avail))
@@ -234,7 +251,7 @@ def main(args):
     #write list of models for debugging
     #print("before the evaluation")
     if len(merged_models) > len(models_avail)+1:
-        fout=os.path.join(outdir,'models_available'+period+'.log')
+        fout=os.path.join(outdir,'_'.join(['models_available',period,output_name])+'.log')
         logger.info("Writing model availability to %s"%fout)
         write_models_merged=pd.DataFrame(merged_models,columns=merged_models.keys())
         write_models_merged.to_csv(fout,sep=' ',index=False)

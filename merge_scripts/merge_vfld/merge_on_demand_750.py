@@ -32,6 +32,68 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff() #http://matplotlib.org/faq/usage_faq.html (interactive mode)
 
+def fill_hole(args,model,date,output_name,no_model=False):
+    '''
+    Fill any holes present when there is not enough models
+    available to do a merge for a given date. Rules:
+    For on_demand models, replace hole with available model (copy over the corresponding file and rename it as needed)
+    For gl_hires, copy over the igb40h11 file for the date
+    For gl_opr, copy over the igb40h11 file for the date
+    '''
+    logger = logging.getLogger(__name__)
+
+    base_model='igb40h11'
+
+    if output_name == 'gl_opr':
+        logger.info("Filling hole in %s with IGB %s"%(date,base_model))
+        ifile=os.path.join(args.vfld_dir+'/'+base_model,''.join(['vfld',base_model,date]))
+        ofile=os.path.join(args.out_dir,''.join(['vfld',output_name,date]))
+        if os.path.isfile(ifile):
+            cmd='cp '+ifile+' '+ofile
+            try:
+                ret=subprocess.check_output(cmd,shell=True)
+            except subprocess.CalledProcessError as err:
+                logger.error('Error copying %s to %s')
+        else:
+            logger.info('%s does not exist!'%ifile)
+
+    if output_name == 'gl_ondemand':
+        logger.info("Filling hole in %s with file from %s"%(str(date),model))
+        ifile=os.path.join(args.vfld_dir+'/'+model,''.join(['vfld',model,str(date)]))
+        ofile=os.path.join(args.out_dir,''.join(['vfld',output_name,str(date)]))
+        if os.path.isfile(ifile):
+            cmd='cp '+ifile+' '+ofile
+            try:
+                ret=subprocess.check_output(cmd,shell=True)
+            except subprocess.CalledProcessError as err:
+                logger.error('Error copying %s to %s')
+        else:
+            logger.info('%s does not exist!'%ifile)
+
+    if output_name == 'gl_hires':
+        #gl_hires comes from the merge of gl_opr and gl_ondemand
+        #if list of models is zero, this function is called with
+        # the base_model name
+        if model == 'igb40h11':
+            logger.info("Special case for gl_hires. No models available. Using IGB")
+        logger.info("Filling hi_res hole in %s with %s"%(date,model))
+        ifile=os.path.join(args.vfld_dir+'/'+model,''.join(['vfld',model,str(date)]))
+        ofile=os.path.join(args.out_dir,''.join(['vfld',output_name,str(date)]))
+        if os.path.isfile(ifile):
+            cmd='cp '+ifile+' '+ofile
+            try:
+                ret=subprocess.check_output(cmd,shell=True)
+            except subprocess.CalledProcessError as err:
+                logger.error('Error copying %s to %s')
+        else:
+            logger.info('%s does not exist!'%ifile)
+
+
+    if output_name not in ['gl_opr','gl_hires','gl_ondemand']:
+        logger.info("Model is %s. Doing nothing"%model)
+
+
+
 def save_unavail(models,date,outdir,period,output_name):
     '''
     Write out dates with not enough models.
@@ -179,9 +241,14 @@ def main(args):
         models_avail = [f.model for f in frames_synop]
         logger.info("Number of models with synop data for %s: %d"%(date,len(frames_synop)))
         if len(frames_synop) < 2:
-            logger.info("Merge failure: not enough models available (%d). Jumping to next date"%len(frames_synop))
-            if len(models_avail) != 0:
+            logger.info("Merge failure: not enough models available (%d)"%len(frames_synop))
+            if len(models_avail) == 1:
                 save_unavail(models_avail,date,outdir,period,output_name)
+                fill_hole(args,models_avail[0],date,output_name)
+            elif len(models_avail) == 0 and output_name == 'gl_hires':
+                fill_hole(args,'igb40h11',date,output_name)
+            else:
+                logger.info("Jumping to next date")
             continue
         else:
             logger.info("Available models: %s"%' '.join(models_avail))

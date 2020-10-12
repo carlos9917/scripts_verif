@@ -56,16 +56,17 @@ def check_streams_availability(stream,period,datadir):
 
 def read_current_state(hfile,period,stream):
     '''
-    read current state through html file printed daily
+    read current state through html file printed daily.
+    Output dtgs that must be available for this period and stream
     '''
     import bs4 as bs
     from bs4 import BeautifulSoup
     cols=['expId','Current assimilated date','End date of stream',
           'Completion date', 'Avg. throughput (7d)',
           'Avg. throughput (30d)']
-    url='https://hirlam.org/portal/CARRA/Progress/current_state_sims.html'
-    url='/home/cap/current_state_sims.html'
-    import urllib.request
+    #url='https://hirlam.org/portal/CARRA/Progress/current_state_sims.html'
+    #url='/home/cap/current_state_sims.html'
+    #import urllib.request
     f = open(hfile,'r') #'/home/cap/current_state_sims.html', 'r')
     s=f.read()
     soup = BeautifulSoup(s,"lxml")
@@ -85,13 +86,15 @@ def read_current_state(hfile,period,stream):
         date1=datetime.strptime(row[1],"%Y%m%d%H")
         #print(row[0])
         if 'B' not in num:
+            if '*' in num: #an asterisk will appear in table sometimes
+                num = num.replace('*','')
             dom_edate[num] = np.append(dom_edate[num],date1)
         #cur_dtg[row[0]]=row[1]
         #end_dtg[row[0]]=row[2]
     period = period.split('-')
     date_ini= datetime.strptime(period[0],'%Y%m%d')
     date_end= datetime.strptime(period[1],'%Y%m%d')
-    copy_ok=False
+    period_avail=False
     #using beg/end dates from stream NE 1, since I only consider 3 streams here
     beg_dates=['19960701','20050901','20130901']
     end_dates=['20060831','20140831','20210630']
@@ -106,10 +109,10 @@ def read_current_state(hfile,period,stream):
         if min(dom_edate[key]) >= date_end and key==stream:
         #if min(dom_edate[key]) >= dtg_beg[key] and min(dom_edate[key]) <= dtg_end[key]:
         #if dtg_beg[key] <= min(dom_edate[key]) and dtg_end[key] >= min(dom_edate[key]):
-            copy_ok=True
+            period_avail=True
             print("date %s for stream %s must be available"%(min_dtg[key],stream))
 
-    return min_dtg, copy_ok
+    return min_dtg, period_avail
 
 def extract_ecfs(dom,stream,yyyymm,tmpdir):
     '''
@@ -127,7 +130,8 @@ def extract_ecfs(dom,stream,yyyymm,tmpdir):
         ret_ls=subprocess.check_output(cmd_ls,shell=True)
         ret_copy=subprocess.check_output(cmd_copy,shell=True)
     except subprocess.CalledProcessError as err:
-        print("Error in calling command %s"%cmd)
+        print("Error in calling command %s"%cmd_ls)
+        print("Error in calling command %s"%cmd_copy)
         print("Hint: maybe not the correct stream number???")
         print("Exiting")
         sys.exit()
@@ -162,15 +166,16 @@ def copy_local(stream,yyyymm):
 
 
 if __name__ == "__main__":
-    period='20161001-20161031'
+    period='19970801-19970831'
     #need to indicate which stream if I want to copy!!
-    stream='3' #CHANGE
+    stream='2' #CHANGE
     datadir='/scratch/ms/dk/nhz/oprint/'
     tmpdir='/scratch/ms/dk/nhx/carra_temp'
     tmpdir='/scratch/ms/dk/nhd/tmp/carra_temp'
-    min_dtg,copy_ok=read_current_state('/home/ms/dk/nhx/scr/check_progress/log/current_state_sims.html',period,stream)
-    print("Last dtgs available per stream")
-    print(min_dtg)
+
+    #Read current state of simulations from daily html file:
+    min_dtg,period_avail=read_current_state('/home/ms/dk/nhx/scr/check_progress/log/current_state_sims.html',period,stream)
+    #Check IGB domain
     dtg_valid, dates_found,dates_notfound = check_streams_availability('IGB',period,datadir)
     NE_ok = False
     IGB_ok = False
@@ -182,6 +187,8 @@ if __name__ == "__main__":
     #print(dates_found)
     #print('-------------')
     #print(dates_notfound)
+
+    #check NE domain
     dtg_valid, dates_found,dates_notfound = check_streams_availability('NE',period,datadir)
     if len(dtg_valid) == len(dates_found):
         print("NE complete")
@@ -191,20 +198,26 @@ if __name__ == "__main__":
     #print(dates_found)
     #print('-------------')
     #print(dates_notfound)
-    #check_streams_availability('NE',period,datadir)
 
-    if NE_ok and IGB_ok:
-        print("proceed with standard setup")
+    #If this period is available, copy data over to from ecfs
+    #to temporary location
+    if period_avail:
+        print("Last dtg available for stream %s"%stream)
+        print(min_dtg)
+        if NE_ok and IGB_ok:
+            print("proceed with standard setup")
+        else:
+            print("copying files to temporary location before proceeding with period: %s"%period)
+            #copy_local(tmpdir)
+            #now=datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S')
+            #tmpdir='_'.join([tmpdir,now])
+            for dom in ['IGB','NE']:
+                try:
+                    cdir=os.path.join(tmpdir,'carra_'+dom)
+                    os.makedirs(cdir)
+                except OSError:
+                    print("%s directory already exists or not enough rights to create it"%cdir)
+                yyyymm=period.split('-')[0][0:6]
+                extract_ecfs(dom,stream,yyyymm,cdir)
     else:
-        print("copying files to temporary location before proceeding with period: %s"%period)
-        #copy_local(tmpdir)
-        #now=datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S')
-        #tmpdir='_'.join([tmpdir,now])
-        for dom in ['IGB','NE']:
-            try:
-                cdir=os.path.join(tmpdir,'carra_'+dom)
-                os.makedirs(cdir)
-            except OSError:
-                print("%s directory already exists or not enough rights to create it"%cdir)
-            yyyymm=period.split('-')[0][0:6]
-            extract_ecfs(dom,stream,yyyymm,cdir)
+        print("Period %s not available yet"%period)

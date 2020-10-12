@@ -18,10 +18,10 @@ ulimit -S -d unlimited || ulimit -d
 
 #using my conda installation:
 WRKDIR=/home/cap/verify/scripts_verif/merge_scripts/merge_vfld
-export PATH=/data/cap/miniconda2/bin:$PATH
-source activate py37
+#export PATH=/data/cap/miniconda2/bin:$PATH
+#source activate py37
 #which python
-py36=/data/cap/miniconda2/envs/py37/bin/python
+#py36=/data/cap/miniconda2/envs/py37/bin/python
 #$py36 $WRKDIR/vfld_lite.py >& $WRKDIR/test_vfld.txt
-$py36 $WRKDIR/merge_750models.py >& $WRKDIR/out_jan.txt
-
+#$py36 $WRKDIR/merge_750models.py >& $WRKDIR/out_jan.txt
+/bin/bash $WRKDIR/example_merge_gl_models.sh >& $WRKDIR/out_jan.txt

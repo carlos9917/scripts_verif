@@ -4,7 +4,7 @@
 ###SBATCH --workdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 #SBATCH --error=/scratch/ms/dk/nhx/oprint/runout/vfldmerge-%J.err
 #SBATCH --output=/scratch/ms/dk/nhx/oprint/runout/vfldmerge-%J.out
-#SBATCH --job-name=merge00
+#SBATCH --job-name=merge98
 
 
 #Example script to combine carra NE and IGB data
@@ -25,14 +25,14 @@ vfldir=/scratch/ms/dk/nhz/oprint/
 #fi: init times
 #yymm : possible command line option here. calculate num of days in month and set command line args below
 #yymm=$1
-yy=2000
-logfile=merge_${yy}_partial.log
-FORCE_OVERWRITE=1
+yy=1998
+#logfile=merge_${yy}_partial.log
+FORCE_OVERWRITE=0 #1: overwrite, 0: no overwriting
 #wrkdir=/perm/ms/dk/nhd/scripts_verif/merge_scripts/merge_vfld
 wrkdir=/home/ms/dk/nhx/scr/merge_scripts/git_repo/scripts_verif/merge_scripts/merge_vfld
 cd $wrkdir
 #for mm in 01 02 03 04 05 06 07 08 09 10 11 12; do
-for mm in 06 08; do
+for mm in 03; do
 logfile=merge_${yy}${mm}.log
 yymm=$yy$mm
 yymmdd=`$py3 ./finaldate.py $yy${mm}01`

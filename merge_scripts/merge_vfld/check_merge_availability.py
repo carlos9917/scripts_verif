@@ -1,4 +1,7 @@
-#
+'''
+Script to check which streams are available
+or missing data
+'''
 import sys
 import os
 import glob
@@ -8,6 +11,7 @@ from datetime import datetime
 from datetime import timedelta
 import numpy as np
 from collections import OrderedDict
+from finaldate import lastday
 
 def check_streams_availability(stream,period,datadir):
      ''' 
@@ -164,15 +168,7 @@ def copy_local(stream,yyyymm):
     '''
     pass
 
-
-if __name__ == "__main__":
-    period='19970801-19970831'
-    #need to indicate which stream if I want to copy!!
-    stream='2' #CHANGE
-    datadir='/scratch/ms/dk/nhz/oprint/'
-    tmpdir='/scratch/ms/dk/nhx/carra_temp'
-    tmpdir='/scratch/ms/dk/nhd/tmp/carra_temp'
-
+def search_stream(stream,period,datadir='/scratch/ms/dk/nhz/oprint/'):
     #Read current state of simulations from daily html file:
     min_dtg,period_avail=read_current_state('/home/ms/dk/nhx/scr/check_progress/log/current_state_sims.html',period,stream)
     #Check IGB domain
@@ -221,3 +217,29 @@ if __name__ == "__main__":
                 extract_ecfs(dom,stream,yyyymm,cdir)
     else:
         print("Period %s not available yet"%period)
+
+if __name__ == "__main__":
+    incomplete_years = [1996, 1997, 1998, 1999, 
+                       2000, 2001, 2002, 2003, 2004,
+                       2016, 2017, 2018]
+    incomplete_years=[1996]
+    #period='19970801-19970831'
+    user=subprocess.check_output("echo $USER",shell=True)
+    user=user.decode('utf-8').rstrip()
+    if user == "nhd":
+        tmpdir='/scratch/ms/dk/nhd/tmp/carra_temp'
+    elif user == "nhx":
+        tmpdir='/scratch/ms/dk/nhx/carra_temp'
+    else:
+        print(f'User {user} unknown')
+        sys.exit()
+    print(tmpdir)
+    stream='1' #CHANGE
+    for yy in incomplete_years:
+        for m in range(1,13):
+            yymmddi = str(yy)+str(m).zfill(2)+'01'
+            yymmddf = lastday(yymmddi)
+            period='-'.join([yymmddi,yymmddf])
+            search_stream(stream,period)
+    #need to indicate which stream if I want to copy!!
+

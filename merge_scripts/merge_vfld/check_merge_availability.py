@@ -97,7 +97,7 @@ def read_current_state(hfile,period,stream_number):
             if '***' in num: #an asterisk will appear in table sometimes
                 num = num.replace('***','')
             dom_edate[num] = np.append(dom_edate[num],date1)
-        print(f"num is {num} and dom {dom}")
+        #print(f"num is {num} and dom {dom}")
         #cur_dtg[row[0]]=row[1]
         #end_dtg[row[0]]=row[2]
     period = period.split('-')
@@ -154,8 +154,8 @@ def select_stream_number(yyyymm,dom):
         beg_date = datetime.strptime(beg_stream[key],'%Y%m%d')
         end_date = datetime.strptime(end_stream[key],'%Y%m%d')
         if beg_date <= current_date <= end_date and dom in key:
-            print(f"Should be using {key} for this date {yyyymm}")
             stream_number = key.split('_')[-1]
+            print(f"Should be using {stream_number} for this date {yyyymm}")
     if stream_number != None:
         return stream_number
     else:
@@ -180,9 +180,9 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
     cmd_ls='els ec:'+os.path.join(*dpath)
     cmd_copy='ecp ec:'+os.path.join(*dpath)+' '+tmpdir
     try:
-        print(f"Getting list of tar files in {dpath}")
+        #print(f"Getting list of tar files in {dpath}")
         ret_ls=subprocess.check_output(cmd_ls,shell=True)
-        print(f"Res: {ret_ls}")
+        #print(f"Res: {ret_ls}")
     except subprocess.CalledProcessError as err:
         print(f"Error in calling {cmd_ls}")
         print("Hint: maybe not the correct stream number???")
@@ -192,6 +192,7 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
 
     tarfile=ret_ls.decode('utf-8').rstrip()
     print(f"tarfile to extract: {tarfile}")
+    write_ec_list('ec:'+tarfile,tmpdir)
     if run:
         try:
             ret_copy=subprocess.check_output(cmd_copy,shell=True)
@@ -216,6 +217,7 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
         add_command += "cd " + tmpdir + '\n'
         add_command += cmd + '\n'
         add_command += "rm -f " + tarfile + '\n'
+        
     #Copy big tar file
     if run:
         try:
@@ -246,6 +248,15 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
         sbatch_ecfs(sname+'_'+yyyymm[2:],sfile,add_command,submit)        
     return failed_commands
 
+def write_ec_list(fpath,tmpdir):
+    ofile=os.path.join(tmpdir,"list_ecp_commands.txt")
+    if os.path.isfile(ofile):
+        with open(ofile,"a") as f:
+            f.write(fpath+"\n")
+    else:
+        with open(ofile,"w") as f:
+            f.write(fpath+"\n")
+
 def write_summary(ofile,dates):
     if os.path.isfile(ofile):
         with open(ofile,"a") as f:
@@ -269,10 +280,19 @@ def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz
     if len(dtg_valid) == len(dates_found):
         print("IGB complete")
         IGB_ok=True
+        files_found = [os.path.join(*[datadir,'carra_IGB','vfldcarra_IGB'+d]) for d in dates_found]
+        if "nhz" in datadir:
+            ofile=os.path.join(tmpdir,"present_oprint_IGB_"+stream_number+'_'+period+".dat")
+        else:    
+            ofile=os.path.join(tmpdir,"present_IGB_"+stream_number+'_'+period+".dat")
+        write_summary(ofile,files_found)
     else:
-        print("IGB missing %d dates"%len(dates_notfound))
-        ofile=os.path.join(tmpdir,"missing_IGB_"+stream_number+'_'+period+".dat")
-        print(f'Writing dates missing for IGB in {ofile}')
+        print("IGB missing %d forecast times"%len(dates_notfound))
+        if "nhz" in datadir:
+            ofile=os.path.join(tmpdir,"missing_oprint_IGB_"+stream_number+'_'+period+".dat")
+        else:
+            ofile=os.path.join(tmpdir,"missing_IGB_"+stream_number+'_'+period+".dat")
+        print(f'Writing forecast times missing for IGB in {ofile}')
         files_notfound = ['vfldcarra_IGB'+d for d in dates_notfound]
         write_summary(ofile,files_notfound)
 
@@ -281,10 +301,19 @@ def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz
     if len(dtg_valid) == len(dates_found):
         print("NE complete")
         NE_ok=True
+        files_found = [os.path.join(*[datadir,'carra_NE','vfldcarra_NE'+d]) for d in dates_found]
+        if "nhz" in datadir:
+            ofile=os.path.join(tmpdir,"present_oprint_NE_"+stream_number+'_'+period+".dat")
+        else:    
+            ofile=os.path.join(tmpdir,"present_NE_"+stream_number+'_'+period+".dat")
+        write_summary(ofile,files_found)
     else:
-        print("NE missing %d dates out of %d"%(len(dates_notfound),len(dtg_valid)))
-        ofile=os.path.join(tmpdir,"missing_NE_"+stream_number+'_'+period+".dat")
-        print(f'Writing dates missing for NE in {ofile}')
+        print("NE missing %d forecast times out of %d"%(len(dates_notfound),len(dtg_valid)))
+        if "nhz" in datadir:
+            ofile=os.path.join(tmpdir,"missing_oprint_NE_"+stream_number+'_'+period+".dat")
+        else:
+            ofile=os.path.join(tmpdir,"missing_NE_"+stream_number+'_'+period+".dat")
+        print(f'Writing forecast times missing for NE in {ofile}')
         files_notfound = ['vfldcarra_NE'+d for d in dates_notfound]
         write_summary(ofile,files_notfound)
 
@@ -294,7 +323,7 @@ def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz
         #print("Last dtg available for stream %s"%stream_number)
         #print(min_dtg)
         if NE_ok and IGB_ok:
-            print("proceed with standard setup")
+            print(f"Data for NE and IGB in {period} already available")
         else:
             print("copying files to temporary location before proceeding with period: %s"%period)
             for dom in ['IGB','NE']:
@@ -311,15 +340,16 @@ def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz
                     print(f"Not doing period {yyyymm}")
     else:
         print("Period %s not available yet"%period)
+
 def first_last_year(yymm):
     '''
-    if year is 1996 limit to start in 19960701
+    if year is 1996 or 1997 limit to start in 19960701 and 19970701
     '''
     proceed = True
     print(yymm)
     yy = yymm[0:4]
     mm = int(yymm[4:6])
-    if yy == '1996' and mm < 7:
+    if (yy == '1996' or yy == '1997') and mm < 7:
         print(f"Reject this period: {yymm}")
         proceed = False
     if yy == '2021' and mm < 7:
@@ -327,11 +357,45 @@ def first_last_year(yymm):
         sys.exit()
     return proceed
 
+def sbatch_ecfs_long(tmpdir,dom,stream):
+    text='''#!/bin/bash 
+# >>>>>>> To be submitted from ecgate <<<<<<<<
+#SBATCH --error=/scratch/ms/dk/nhd/tmp/carra_temp/out/sbatch-%J.err
+#SBATCH --output=/scratch/ms/dk/nhd/tmp/carra_temp/out/sbatch-%J.out
+#SBATCH --job-name=fetch_'''+dom+'''
+module load ecfs
+ecd ec:/nhx/harmonie/carra_'''+dom+'_'+stream+'''/vfld/
+ecp -F ./list_ecp_commands.txt . --order=tape
+'''
+    with open(os.path.join(tmpdir,"copy_all_"+dom+"_"+stream+".sh"),'w') as f:
+        f.write(text)
+    #ret=subprocess.check_output("sbatch "+sfile,shell=True)
+
 if __name__ == "__main__":
+    stream_number='3' #CHANGE Decide according to stream period (1,2,3)
+    submit=False
+    checkExtract=True
     incomplete_years = [1996, 1997, 1998, 1999, 
                        2000, 2001, 2002, 2003, 2004,
                        2016, 2017, 2018]
-    incomplete_years=[1996]
+    incomplete_years=[2018]
+    bools = {"F":False,"T":True}
+    if len(sys.argv) != 5:
+        example = '''./check_merge_availability.py stream year submit checkExtract
+                    ./check_merge_availability.py 3 2018,2019 True False'''
+        print(f"Please provide input as in {example}")
+        sys.exit()
+    else:
+        stream_number = sys.argv[1]
+        year = sys.argv[2]
+        if "," in year:
+            incomplete_years = year.split(',')
+        else:
+            incomplete_years = [year]
+        submit = bools[sys.argv[3]]
+        checkExtract = bools[sys.argv[4]]
+        print(f"Parameters: {stream_number}, {incomplete_years}, {submit}, {checkExtract}")
+        print(type(submit))
     #period='19970801-19970831'
     user=subprocess.check_output("echo $USER",shell=True)
     user=user.decode('utf-8').rstrip()
@@ -343,23 +407,27 @@ if __name__ == "__main__":
         print(f'User {user} unknown')
         sys.exit()
     print(f'Unpacking data in {tmpdir}')
-    stream_number='1' #CHANGE Decide according to stream period (1,2,3)
-    submit=False
+
+
     #use this to search first
     datadir='/scratch/ms/dk/nhz/oprint/'
     #then switch to this to check if any files still missing after extraction from ecfs
-    datadir=tmpdir
+    if  checkExtract:
+        datadir=tmpdir
     for yy in incomplete_years:
         for m in range(1,13):
             yymmddi = str(yy)+str(m).zfill(2)+'01'
             yymmddf = lastday(yymmddi)
             period='-'.join([yymmddi,yymmddf])
-            print(period)
+            #print(period)
             check_period = first_last_year(period)
             if not check_period:
-                print(f'Period not available: {period}')
                 continue
             print(f'Period to check: {period}')
             search_stream(stream_number,period,tmpdir,submit,datadir=datadir)
-    #need to indicate which stream if I want to copy!!
+        #do whole year at once for each domain
+        if "nhz" not in datadir:
+            for dom in ['NE','IGB']:
+                stream=select_stream_number(yymmddf[0:6],dom)
+                sbatch_ecfs_long(os.path.join(datadir,"carra_"+dom),dom,stream)
 

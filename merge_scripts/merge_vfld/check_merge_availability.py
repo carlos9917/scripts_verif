@@ -192,7 +192,7 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
 
     tarfile=ret_ls.decode('utf-8').rstrip()
     print(f"tarfile to extract: {tarfile}")
-    write_ec_list('ec:'+tarfile,tmpdir)
+    write_ec_list('ec:'+tarfile,tmpdir,yyyymm[0:4])
     if run:
         try:
             ret_copy=subprocess.check_output(cmd_copy,shell=True)
@@ -248,8 +248,8 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
         sbatch_ecfs(sname+'_'+yyyymm[2:],sfile,add_command,submit)        
     return failed_commands
 
-def write_ec_list(fpath,tmpdir):
-    ofile=os.path.join(tmpdir,"list_ecp_commands.txt")
+def write_ec_list(fpath,tmpdir,year):
+    ofile=os.path.join(tmpdir,'list_ecp_commands_'+year+'.txt')
     if os.path.isfile(ofile):
         with open(ofile,"a") as f:
             f.write(fpath+"\n")
@@ -357,18 +357,25 @@ def first_last_year(yymm):
         sys.exit()
     return proceed
 
-def sbatch_ecfs_long(tmpdir,dom,stream):
+def sbatch_ecfs_long(script,dom,stream,year):
     text='''#!/bin/bash 
 # >>>>>>> To be submitted from ecgate <<<<<<<<
 #SBATCH --error=/scratch/ms/dk/nhd/tmp/carra_temp/out/sbatch-%J.err
 #SBATCH --output=/scratch/ms/dk/nhd/tmp/carra_temp/out/sbatch-%J.out
-#SBATCH --job-name=fetch_'''+dom+'''
+#SBATCH --job-name=fetch_'''+dom+'_'+str(year)+'''
 module load ecfs
 ecd ec:/nhx/harmonie/carra_'''+dom+'_'+stream+'''/vfld/
-ecp -F ./list_ecp_commands.txt . --order=tape
+ecp -F ./list_ecp_commands_'''+str(year)+'''.txt .
 '''
-    with open(os.path.join(tmpdir,"copy_all_"+dom+"_"+stream+".sh"),'w') as f:
-        f.write(text)
+    #script=os.path.join(tmpdir,"copy_all_"+dom+"_"+stream+'_'+str(yy)+".sh")
+    print(script)
+    with open(script,'w') as f:
+        f.write(text+'\n')
+    cmd_t1 = 'for file in `ls -1 *.tar`; do tar xvf ${file}; rm -f ${file};done'
+    cmd_t2 = 'for file in `ls -1 *.tar.gz`; do tar zxvf ${file}; rm -f ${file};done'
+    with open(script,'a') as f:
+        f.write(cmd_t1+'\n')
+        f.write(cmd_t2+'\n')
     #ret=subprocess.check_output("sbatch "+sfile,shell=True)
 
 if __name__ == "__main__":
@@ -379,10 +386,12 @@ if __name__ == "__main__":
                        2000, 2001, 2002, 2003, 2004,
                        2016, 2017, 2018]
     incomplete_years=[2018]
+    incomplete_months=[i for i in range(1,13)]
+    print(incomplete_months)
     bools = {"F":False,"T":True}
-    if len(sys.argv) != 5:
-        example = '''./check_merge_availability.py stream year submit checkExtract
-                    ./check_merge_availability.py 3 2018,2019 True False'''
+    if len(sys.argv) != 6:
+        example = '''./check_merge_availability.py stream year(s) submitOrNot checkExtract cleanOrNot
+                    ./check_merge_availability.py 3 2018,2019 True False True'''
         print(f"Please provide input as in {example}")
         sys.exit()
     else:
@@ -394,8 +403,8 @@ if __name__ == "__main__":
             incomplete_years = [year]
         submit = bools[sys.argv[3]]
         checkExtract = bools[sys.argv[4]]
-        print(f"Parameters: {stream_number}, {incomplete_years}, {submit}, {checkExtract}")
-        print(type(submit))
+        clean = bools[sys.argv[5]]
+        print(f"Parameters: {stream_number}, {incomplete_years}, {submit}, {checkExtract} {clean}")
     #period='19970801-19970831'
     user=subprocess.check_output("echo $USER",shell=True)
     user=user.decode('utf-8').rstrip()
@@ -414,8 +423,20 @@ if __name__ == "__main__":
     #then switch to this to check if any files still missing after extraction from ecfs
     if  checkExtract:
         datadir=tmpdir
+
+    if clean:
+        import glob
+        for dom in ['NE','IGB']:
+            cdir=os.path.join(tmpdir,"carra_"+dom)
+            scriptList = glob.glob(os.path.join(cdir,'*sh'))
+            ecpList = glob.glob(os.path.join(cdir,'*txt'))
+            clean_files=ecpList+scriptList
+            for f in clean_files:
+                print(f"removing {f}")
+                os.remove(os.path.join(cdir,f))
+
     for yy in incomplete_years:
-        for m in range(1,13):
+        for m in incomplete_months: #range(1,13):
             yymmddi = str(yy)+str(m).zfill(2)+'01'
             yymmddf = lastday(yymmddi)
             period='-'.join([yymmddi,yymmddf])
@@ -426,8 +447,11 @@ if __name__ == "__main__":
             print(f'Period to check: {period}')
             search_stream(stream_number,period,tmpdir,submit,datadir=datadir)
         #do whole year at once for each domain
-        if "nhz" not in datadir:
-            for dom in ['NE','IGB']:
-                stream=select_stream_number(yymmddf[0:6],dom)
-                sbatch_ecfs_long(os.path.join(datadir,"carra_"+dom),dom,stream)
+        #if "nhz" not in datadir:
+        print("Writing the whole script")
+        for dom in ['NE','IGB']:
+            stream=select_stream_number(yymmddf[0:6],dom)
+            ddir=os.path.join(tmpdir,'carra_'+dom)
+            script=os.path.join(ddir,"copy_all_"+dom+"_"+stream+'_'+str(yy)+".sh")
+            sbatch_ecfs_long(script,dom,stream,yy)
 

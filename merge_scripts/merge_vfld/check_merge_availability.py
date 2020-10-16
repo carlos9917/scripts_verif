@@ -13,10 +13,10 @@ import numpy as np
 from collections import OrderedDict
 from finaldate import lastday
 
-def check_streams_availability(stream,period,datadir):
+def check_streams_availability(dom,period,datadir):
      ''' 
      check if all files that should be available for the merge of
-     IGB and NE streams are indeed available
+     IGB and NE domains are indeed available
      '''
      flen=31
      #init times: 00 and 12. Forecast hours expected from 0-30. Every 1h until 6, then every 3 h
@@ -29,8 +29,9 @@ def check_streams_availability(stream,period,datadir):
      date_end=datetime.strptime(period[1],'%Y%m%d')
      dates = [date_ini + timedelta(days=x) for x in range(0, (date_end-date_ini).days + 1)]
      model_dates=[datetime.strftime(date,'%Y%m%d') for date in dates]
-     stream='_'.join(['carra',stream])
-     vflddir=os.path.join(datadir,stream)
+     domain='_'.join(['carra',dom])
+     vflddir=os.path.join(datadir,domain)
+     print(f"Searching {vflddir}")
      dates_found=[]
      yyyymm=period[0][0:6]
      print(f'Gonna search in {vflddir} for {yyyymm}')
@@ -155,7 +156,7 @@ def select_stream_number(yyyymm,dom):
         end_date = datetime.strptime(end_stream[key],'%Y%m%d')
         if beg_date <= current_date <= end_date and dom in key:
             stream_number = key.split('_')[-1]
-            print(f"Should be using {stream_number} for this date {yyyymm}")
+            print(f"Should be using stream {stream_number} for this date {yyyymm} and domain {dom}")
     if stream_number != None:
         return stream_number
     else:
@@ -213,7 +214,6 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
     else:    
         sfile='copy_'+'_'.join([dom,stream_number,yyyymm])+'.sh'
         sfile = os.path.join(tmpdir,sfile)
-        print(f"Running all commands in sbatch script {sfile}")
         add_command += "cd " + tmpdir + '\n'
         add_command += cmd + '\n'
         add_command += "rm -f " + tarfile + '\n'
@@ -241,11 +241,12 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
                     os.remove(vfile)    
                 except subprocess.CalledProcessError as err:
                     print("Error uncompressing %s"%vfile)
-    else:
-        print("Running all commands from sbatch file")
-        cmd = 'for file in `ls -1 *.tar.gz`; do tar zxvf ${file}; rm -f ${file};done'
-        add_command += cmd + '\n'
-        sbatch_ecfs(sname+'_'+yyyymm[2:],sfile,add_command,submit)        
+    #TODO: delete this option. I will submitting the whole list in one file
+    #else:
+    #    print("Running all commands from sbatch file")
+    #    cmd = 'for file in `ls -1 *.tar.gz`; do tar zxvf ${file}; rm -f ${file};done'
+    #    add_command += cmd + '\n'
+    #    sbatch_ecfs(sname+'_'+yyyymm[2:],sfile,add_command,submit)        
     return failed_commands
 
 def write_ec_list(fpath,tmpdir,year):
@@ -257,7 +258,21 @@ def write_ec_list(fpath,tmpdir,year):
         with open(ofile,"w") as f:
             f.write(fpath+"\n")
 
+def create_links(dates,dest):
+    for date in dates:
+        tfile=date.split('/')[-1]
+        cmd="ln -sf "+date+" "+os.path.join(dest,tfile)
+        try:
+            ret=subprocess.check_output(cmd,shell=True)
+        except subprocess.CalledProcessError as err:
+            print(f"Error in creating link {cmd}")
+
 def write_summary(ofile,dates):
+    with open(ofile,"w") as f:
+        for date in dates:
+            f.write(date+"\n")
+
+def write_failed(ofile,dates):
     if os.path.isfile(ofile):
         with open(ofile,"a") as f:
             for date in dates:
@@ -267,25 +282,18 @@ def write_summary(ofile,dates):
             for date in dates:
                 f.write(date+"\n")
 
-def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz/oprint/'):
-    #Read current state of simulations from daily html file:
-    #TURNING THIS OFF FOR THE MOMENT! Still to check
-    #min_dtg,period_avail=read_current_state('/home/ms/dk/nhx/scr/check_progress/log/current_state_sims.html',period,stream_number)
-    period_avail = True
-
+def search_stream(stream_number,period,tmpdir,submit,link,datadir='/scratch/ms/dk/nhz/oprint/'):
     #Check IGB domain
-    dtg_valid, dates_found,dates_notfound = check_streams_availability('IGB',period,datadir)
+    IGB_path = os.path.join(datadir,'carra_IGB')
+    NE_path = os.path.join(datadir,'carra_NE')
     NE_ok = False
     IGB_ok = False
+
+    dtg_valid, dates_found,dates_notfound = check_streams_availability('IGB',period,datadir)
+    files_found = [os.path.join(IGB_path,'vfldcarra_IGB'+d) for d in dates_found]
     if len(dtg_valid) == len(dates_found):
         print("IGB complete")
         IGB_ok=True
-        files_found = [os.path.join(*[datadir,'carra_IGB','vfldcarra_IGB'+d]) for d in dates_found]
-        if "nhz" in datadir:
-            ofile=os.path.join(tmpdir,"present_oprint_IGB_"+stream_number+'_'+period+".dat")
-        else:    
-            ofile=os.path.join(tmpdir,"present_IGB_"+stream_number+'_'+period+".dat")
-        write_summary(ofile,files_found)
     else:
         print("IGB missing %d forecast times"%len(dates_notfound))
         if "nhz" in datadir:
@@ -295,18 +303,17 @@ def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz
         print(f'Writing forecast times missing for IGB in {ofile}')
         files_notfound = ['vfldcarra_IGB'+d for d in dates_notfound]
         write_summary(ofile,files_notfound)
+    if link:
+        print(f"Creating soft links for IGB files present in {IGB_path}")
+        dest=os.path.join(tmpdir,'carra_IGB') #,"links_IGB_"+stream_number+'_'+period+".sh"])
+        create_links(files_found,dest)
 
     #check NE domain
     dtg_valid, dates_found,dates_notfound = check_streams_availability('NE',period,datadir)
+    files_found = [os.path.join(NE_path,'vfldcarra_NE'+d) for d in dates_found]
     if len(dtg_valid) == len(dates_found):
         print("NE complete")
         NE_ok=True
-        files_found = [os.path.join(*[datadir,'carra_NE','vfldcarra_NE'+d]) for d in dates_found]
-        if "nhz" in datadir:
-            ofile=os.path.join(tmpdir,"present_oprint_NE_"+stream_number+'_'+period+".dat")
-        else:    
-            ofile=os.path.join(tmpdir,"present_NE_"+stream_number+'_'+period+".dat")
-        write_summary(ofile,files_found)
     else:
         print("NE missing %d forecast times out of %d"%(len(dates_notfound),len(dtg_valid)))
         if "nhz" in datadir:
@@ -316,30 +323,31 @@ def search_stream(stream_number,period,tmpdir,submit,datadir='/scratch/ms/dk/nhz
         print(f'Writing forecast times missing for NE in {ofile}')
         files_notfound = ['vfldcarra_NE'+d for d in dates_notfound]
         write_summary(ofile,files_notfound)
+    if link:
+        print(f"Creating soft links for NE files present in {NE_path}")
+        dest=os.path.join(tmpdir,'carra_NE')
+        create_links(files_found,dest)
 
     #If this period is available, copy data over to from ecfs
     #to temporary location
-    if period_avail:
-        #print("Last dtg available for stream %s"%stream_number)
-        #print(min_dtg)
-        if NE_ok and IGB_ok:
-            print(f"Data for NE and IGB in {period} already available")
-        else:
-            print("copying files to temporary location before proceeding with period: %s"%period)
-            for dom in ['IGB','NE']:
-                try:
-                    cdir=os.path.join(tmpdir,'carra_'+dom)
-                    os.makedirs(cdir)
-                except OSError:
-                    print("%s directory already exists or not enough rights to create it"%cdir)
-                yyyymm=period.split('-')[0][0:6]
-                failed=extract_ecfs(dom,stream_number,yyyymm,cdir,submit)
-                if len(failed) != 0:
-                    ofile=os.path.join(tmpdir,"failed_commands.dat")
-                    write_summary(ofile,failed)
-                    print(f"Not doing period {yyyymm}")
+    #print("Last dtg available for stream %s"%stream_number)
+    #print(min_dtg)
+    if NE_ok and IGB_ok:
+        print(f"Data for NE and IGB in {period} already available")
     else:
-        print("Period %s not available yet"%period)
+        print("copying files to temporary location before proceeding with period: %s"%period)
+        for dom in ['IGB','NE']:
+            try:
+                cdir=os.path.join(tmpdir,'carra_'+dom)
+                os.makedirs(cdir)
+            except OSError:
+                print("%s directory already exists or not enough rights to create it"%cdir)
+            yyyymm=period.split('-')[0][0:6]
+            failed=extract_ecfs(dom,stream_number,yyyymm,cdir,submit)
+            if len(failed) != 0:
+                ofile=os.path.join(tmpdir,"failed_commands.dat")
+                write_summary(ofile,failed)
+                print(f"Not doing period {yyyymm}")
 
 def first_last_year(yymm):
     '''
@@ -368,7 +376,6 @@ ecd ec:/nhx/harmonie/carra_'''+dom+'_'+stream+'''/vfld/
 ecp -F ./list_ecp_commands_'''+str(year)+'''.txt .
 '''
     #script=os.path.join(tmpdir,"copy_all_"+dom+"_"+stream+'_'+str(yy)+".sh")
-    print(script)
     with open(script,'w') as f:
         f.write(text+'\n')
     cmd_t1 = 'for file in `ls -1 *.tar`; do tar xvf ${file}; rm -f ${file};done'
@@ -417,12 +424,14 @@ if __name__ == "__main__":
         sys.exit()
     print(f'Unpacking data in {tmpdir}')
 
-
     #use this to search first
     datadir='/scratch/ms/dk/nhz/oprint/'
     #then switch to this to check if any files still missing after extraction from ecfs
     if  checkExtract:
         datadir=tmpdir
+        link=False
+    else:
+        link=True
 
     if clean:
         import glob
@@ -437,7 +446,8 @@ if __name__ == "__main__":
 
     for yy in incomplete_years:
         for m in incomplete_months: #range(1,13):
-            yymmddi = str(yy)+str(m).zfill(2)+'01'
+            yyyymm = str(yy)+str(m).zfill(2)
+            yymmddi = yyyymm +'01'
             yymmddf = lastday(yymmddi)
             period='-'.join([yymmddi,yymmddf])
             #print(period)
@@ -445,7 +455,9 @@ if __name__ == "__main__":
             if not check_period:
                 continue
             print(f'Period to check: {period}')
-            search_stream(stream_number,period,tmpdir,submit,datadir=datadir)
+            # stream number based on NE. Check if correct
+            stream_number = select_stream_number(yyyymm,"NE")
+            search_stream(stream_number,period,tmpdir,submit,link,datadir=datadir)
         #do whole year at once for each domain
         #if "nhz" not in datadir:
         print("Writing the whole script")

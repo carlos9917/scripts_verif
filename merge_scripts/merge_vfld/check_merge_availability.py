@@ -258,12 +258,13 @@ def write_ec_list(fpath,tmpdir,year):
         with open(ofile,"w") as f:
             f.write(fpath+"\n")
 
-def create_links(dates,dest):
-    for date in dates:
-        tfile=date.split('/')[-1]
-        cmd="ln -sf "+date+" "+os.path.join(dest,tfile)
+def create_links(files,ddir):
+    for f in files:
+        tfile=f.split('/')[-1]
+        link_name = os.path.join(ddir,tfile)
+        cmd="ln -sf "+f+" "+link_name
         try:
-            ret=subprocess.check_output(cmd,shell=True)
+             ret=subprocess.check_output(cmd,shell=True)
         except subprocess.CalledProcessError as err:
             print(f"Error in creating link {cmd}")
 
@@ -295,7 +296,7 @@ def search_stream(stream_number,period,tmpdir,submit,link,datadir='/scratch/ms/d
         print("IGB complete")
         IGB_ok=True
     else:
-        print("IGB missing %d forecast times"%len(dates_notfound))
+        print("IGB missing %d forecast times out of %d"%(len(dates_notfound),len(dtg_valid)))
         if "nhz" in datadir:
             ofile=os.path.join(tmpdir,"missing_oprint_IGB_"+stream_number+'_'+period+".dat")
         else:
@@ -303,7 +304,7 @@ def search_stream(stream_number,period,tmpdir,submit,link,datadir='/scratch/ms/d
         print(f'Writing forecast times missing for IGB in {ofile}')
         files_notfound = ['vfldcarra_IGB'+d for d in dates_notfound]
         write_summary(ofile,files_notfound)
-    if link:
+    if link and len(files_found) != 0:
         print(f"Creating soft links for IGB files present in {IGB_path}")
         dest=os.path.join(tmpdir,'carra_IGB') #,"links_IGB_"+stream_number+'_'+period+".sh"])
         create_links(files_found,dest)
@@ -323,7 +324,7 @@ def search_stream(stream_number,period,tmpdir,submit,link,datadir='/scratch/ms/d
         print(f'Writing forecast times missing for NE in {ofile}')
         files_notfound = ['vfldcarra_NE'+d for d in dates_notfound]
         write_summary(ofile,files_notfound)
-    if link:
+    if link and len(files_found) != 0:
         print(f"Creating soft links for NE files present in {NE_path}")
         dest=os.path.join(tmpdir,'carra_NE')
         create_links(files_found,dest)
@@ -386,7 +387,7 @@ ecp -F ./list_ecp_commands_'''+str(year)+'''.txt .
     #ret=subprocess.check_output("sbatch "+sfile,shell=True)
 
 if __name__ == "__main__":
-    stream_number='3' #CHANGE Decide according to stream period (1,2,3)
+    #stream_number='3' #CHANGE Decide according to stream period (1,2,3)
     submit=False
     checkExtract=True
     incomplete_years = [1996, 1997, 1998, 1999, 
@@ -396,22 +397,22 @@ if __name__ == "__main__":
     incomplete_months=[i for i in range(1,13)]
     print(incomplete_months)
     bools = {"F":False,"T":True}
-    if len(sys.argv) != 6:
-        example = '''./check_merge_availability.py stream year(s) submitOrNot checkExtract cleanOrNot
-                    ./check_merge_availability.py 3 2018,2019 True False True'''
+    if len(sys.argv) != 5:
+        example = '''./check_merge_availability.py year(s) submitOrNot checkExtract cleanOrNot
+                    ./check_merge_availability.py 2018,2019 True False True'''
         print(f"Please provide input as in {example}")
         sys.exit()
     else:
-        stream_number = sys.argv[1]
-        year = sys.argv[2]
+        #stream_number = sys.argv[1]
+        year = sys.argv[1]
         if "," in year:
             incomplete_years = year.split(',')
         else:
             incomplete_years = [year]
-        submit = bools[sys.argv[3]]
-        checkExtract = bools[sys.argv[4]]
-        clean = bools[sys.argv[5]]
-        print(f"Parameters: {stream_number}, {incomplete_years}, {submit}, {checkExtract} {clean}")
+        submit = bools[sys.argv[2]]
+        checkExtract = bools[sys.argv[3]]
+        clean = bools[sys.argv[4]]
+        print(f"Parameters: {incomplete_years}, {submit}, {checkExtract} {clean}")
     #period='19970801-19970831'
     user=subprocess.check_output("echo $USER",shell=True)
     user=user.decode('utf-8').rstrip()

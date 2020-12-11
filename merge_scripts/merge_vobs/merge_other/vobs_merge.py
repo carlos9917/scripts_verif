@@ -10,21 +10,15 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
 class vobs(object):
-    def __init__(self,period=None, flen=None, datadir=None, finit=None):
-        self.flen = flen
-        self.finit = finit
-        if ',' in self.finit:
-            self.finit=finit.split(',')
-        else:
-            self.finit=[finit]
+    def __init__(self,period=None, datadir=None):
+        self.flen = 24 #always 24h for vobs
+        self.ftimes=list(range(0,self.flen))
         self.period = period.split('-')
         self.datadir = datadir
         self.ifiles,self.dates = self._locate_files(self.datadir,self.period,self.flen)
-        self.ftimes = self._dates_2ftimes(self.period,self.flen)
         data_synop, data_temp, accum_synop = self._get_data(self.ifiles)
         self.data_synop = data_synop
         self.data_temp = data_temp
-        #self.temp_stations = self._get_temp_station_list(self.data_temp)
         self.accum_synop = accum_synop
 
     def _locate_files(self,datadir,period,flen):
@@ -43,9 +37,7 @@ class vobs(object):
             for hour in range(0,flen):
                 date_file = datetime.datetime.strptime(date,'%Y%m%d') + datetime.timedelta(seconds=3600*hour)
                 date_file = datetime.datetime.strftime(date_file,'%Y%m%d%H')
-                #dtgs.append(''.join([date_file,str(hour).zfill(2)]))
                 dtgs.append(date_file)
-                #fname=''.join(['vobs',date_file,str(hour).zfill(2)])
                 fname=''.join(['vobs',date_file])
                 ifile=os.path.join(datadir,fname)
                 if os.path.exists(ifile):
@@ -67,7 +59,6 @@ class vobs(object):
         data_temp=OrderedDict()
         accum_synop =OrderedDict()
         for i,ifile in enumerate(ifiles):
-            #date=self.dates[i] #ORIGINAL: now storing in ftimes to match with vfld dates
             date=self.ftimes[i]
             data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile)
             # print a warning if synop data is not there:
@@ -108,10 +99,6 @@ class vobs(object):
             #NOTE 2: taking this back, since for the merging makes more sense
             #when writing the data in vfld format for monitor in vfld_monitor
             data_synop.columns=colnames
-            #if 'FI' in colnames:
-            #    data_synop.columns=colnames[0:3]+[' '.join(str(i) for i in col) for col in zip(colnames[3:],accum_synop)]
-            #else:
-            #    data_synop.columns=colnames[0:4]+[' '.join(str(i) for i in col) for col in zip(colnames[4:],accum_synop)]
             ignore_temp=ignore_rows+data_synop.shape[0]+10
             data_temp =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
                                       dtype=str,skiprows=ignore_temp)

@@ -10,7 +10,8 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
 class vobs(object):
-    def __init__(self,period=None, datadir=None):
+    def __init__(self,period=None, datadir=None, model=None):
+        self.model = model
         self.flen = 24 #always 24h for vobs
         self.ftimes=list(range(0,self.flen))
         self.period = period.split('-')

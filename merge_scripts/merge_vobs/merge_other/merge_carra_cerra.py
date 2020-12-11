@@ -131,9 +131,9 @@ if __name__ == '__main__':
     #ts_vobs=vobs()        
     #forbidden_dates = ts_vobs.timestamps.simtimes.tolist() #which dates already processed
 
-    cerra = vo(period=period, datadir=os.path.join(datadir,"CERRA"))
+    cerra = vo(period=period, datadir=os.path.join(datadir,"CERRA"),model="CERRA")
     logger.info("CERRA data loaded")
-    carra = vo(period=period, datadir=os.path.join(datadir,"CARRA"))
+    carra = vo(period=period, datadir=os.path.join(datadir,"CARRA"),model="CARRA")
     logger.info("CARRA data loaded")
     models=[carra, cerra] #NOTE: Data from first source will replace any repeated values on the second
     logger.info("Merging synop data from all stations")

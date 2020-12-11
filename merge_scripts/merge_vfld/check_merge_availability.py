@@ -163,7 +163,7 @@ def select_stream_number(yyyymm,dom):
         print(f"Could not find stream name for {yyyymm}")
         sys.exit()
 
-def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
+def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit):
     '''
     extract files from ecfs if files are missing
     tar balls are of the form
@@ -194,53 +194,18 @@ def extract_ecfs(dom,stream_number,yyyymm,tmpdir,submit,run=False):
     tarfile=ret_ls.decode('utf-8').rstrip()
     print(f"tarfile to extract: {tarfile}")
     write_ec_list('ec:'+tarfile,tmpdir,yyyymm[0:4])
-    if run:
-        try:
-            ret_copy=subprocess.check_output(cmd_copy,shell=True)
-        except subprocess.CalledProcessError as err:
-            print(f"Error in calling {cmd_copy}")
-            print("Hint: maybe not the correct stream number???")
-            print("Exiting")
-            sys.exit()
-    else:
-        dpath=[edir,sname,'vfld',tarfile]
-        cmd_copy='ecp ec:'+os.path.join(*dpath)+' '+tmpdir
-        add_command = cmd_copy+'\n'
+    dpath=[edir,sname,'vfld',tarfile]
+    cmd_copy='ecp ec:'+os.path.join(*dpath)+' '+tmpdir
+    add_command = cmd_copy+'\n'
 
     cmd='tar xvf '+tarfile
-    if run:
-        os.chdir(tmpdir)
-        #cmd='cd '+tmpdir+';tar xvf '+tarfile
-    else:    
-        sfile='copy_'+'_'.join([dom,stream_number,yyyymm])+'.sh'
-        sfile = os.path.join(tmpdir,sfile)
-        add_command += "cd " + tmpdir + '\n'
-        add_command += cmd + '\n'
-        add_command += "rm -f " + tarfile + '\n'
+    sfile='copy_'+'_'.join([dom,stream_number,yyyymm])+'.sh'
+    sfile = os.path.join(tmpdir,sfile)
+    add_command += "cd " + tmpdir + '\n'
+    add_command += cmd + '\n'
+    add_command += "rm -f " + tarfile + '\n'
         
     #Copy big tar file
-    if run:
-        try:
-            ret=subprocess.check_output(cmd,shell=True)
-            dfile=tarfile.rstrip()
-            os.remove(dfile)
-        except subprocess.CalledProcessError as err:
-            print("Error uncompressing data")
-        #cmd=re.sub('els ec:','',cmd)
-
-    if run:
-        for vfile in os.listdir(tmpdir):
-                if vfile.endswith("tar.gz"):
-                    print(f"file to uncompress: {vfile}")
-                    cmd='tar zxvf '+vfile
-                elif vfile.endswith("tar"):
-                    print(f"file to uncompress: {vfile}")
-                    cmd='tar xvf '+vfile
-                try:
-                    ret=subprocess.check_output(cmd,shell=True)
-                    os.remove(vfile)    
-                except subprocess.CalledProcessError as err:
-                    print("Error uncompressing %s"%vfile)
     #TODO: delete this option. I will submitting the whole list in one file
     #else:
     #    print("Running all commands from sbatch file")

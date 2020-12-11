@@ -23,9 +23,9 @@ from finaldate import lastday
 datadir='/scratch/ms/dk/nhz/oprint/'
 outdir="/scratch/ms/dk/nhd/tmp/carra_temp/missing_data_nhz"
 
-datadir='/scratch/ms/dk/nhd/tmp/carra_temp/'
-outdir="/scratch/ms/dk/nhd/tmp/carra_temp/still_missing"
-incomplete_years = [1999,2000,2001]
+#datadir='/scratch/ms/dk/nhd/tmp/carra_temp/'
+#outdir="/scratch/ms/dk/nhd/tmp/carra_temp/still_missing"
+incomplete_years = [2006]
 
 def write_summary(ofile,dates):
     with open(ofile,"w") as f:

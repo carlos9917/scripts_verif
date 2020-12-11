@@ -118,7 +118,7 @@ if __name__ == '__main__':
     print("Reading model %s"%model)
     ec9 = vfld(model=model, period=period, finit=finit, flen=flen, datadir=datadir)
     print("Reading obs")
-    obs = vobs(period=period, flen=flen, finit=finit, datadir=os.path.join(datadir,'OBS')) #note: vobs only every 24 h
+    obs = vobs(period=period, flen=flen, finit=finit, datadir=os.path.join(datadir,'OBS4')) #note: vobs only every 24 h
 
     date_vobs=ec9.dates[0][0:8]+ec9.dates[0][10:12]
     vobs_count=datetime.strptime(date_vobs, "%Y%m%d%H")

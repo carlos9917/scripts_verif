@@ -59,7 +59,7 @@ class vobs(object):
         data_temp=OrderedDict()
         accum_synop =OrderedDict()
         for i,ifile in enumerate(ifiles):
-            date=self.ftimes[i]
+            date=self.dates[i]
             data_synop[date], data_temp[date], accum_synop[date] = self._split_data(ifile)
             # print a warning if synop data is not there:
             # TODO: if no synop, don't include model!
@@ -99,6 +99,9 @@ class vobs(object):
             #NOTE 2: taking this back, since for the merging makes more sense
             #when writing the data in vfld format for monitor in vfld_monitor
             data_synop.columns=colnames
+            #convert the station names to integer so as not to mix them with the 
+            #short/long name convention used by CARRA and CERRA. Damn meteorologists follow their own conventions...          
+            data_synop = data_synop.astype({'stationId': int})
             ignore_temp=ignore_rows+data_synop.shape[0]+10
             data_temp =  pd.read_csv(ifile,sep=r"\s+",engine='python',header=None,index_col=None,names=cols_temp,
                                       dtype=str,skiprows=ignore_temp)
@@ -202,6 +205,6 @@ class vobs(object):
 if __name__ == '__main__':
     period='20190601-20190601'
     datadir='/home/cap/data/from_ecmwf/codes/scripts_verif/contrib_verif/data/OBS'
-    vobs_data = vobs(period=period, flen=24, datadir=datadir)
-    print(vobs_data.data_synop)
+    #vobs_data = vobs(period=period, datadir=datadir)
+    #print(vobs_data.data_synop)
     #SYNOP: access data for a particular YYYYMMDDHH using vobs_data.data_synop[stringdate]

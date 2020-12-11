@@ -136,7 +136,6 @@ if __name__ == '__main__':
     carra = vo(period=period, datadir=os.path.join(datadir,"CARRA"))
     logger.info("CARRA data loaded")
     models=[carra, cerra] #NOTE: Data from first source will replace any repeated values on the second
-
     logger.info("Merging synop data from all stations")
     for date in carra.dates:
         #if (date not in forbidden_dates) or (force_write) :

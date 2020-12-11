@@ -29,5 +29,5 @@ for yymmdd in ${yymmdd_range[@]}; do
 let i++
 logfile=mergedaily_${timestamp}_${i}.log
 echo "Doing period: $yymmdd"
-$py3 ./merge_carra_vfld.py -pe $yymmdd -fl 31 -fi 00,06,12,18 -dvfl $vfldir -dout $outdir -log $logfile -fw
+$py3 ./merge_carra_vfld.py -pe $yymmdd -fl 31 -dvfl $vfldir -dout $outdir -log $logfile -fw
 done

@@ -1,4 +1,4 @@
-# Merge CARRA and CERRA vobs
+# Merge two sources, for example from CARRA and CERRA vobs
 #
 # The aim is to combine all data produced by two different vobs sources
 # Whenever a station appears in both data sets, the first data set takes precedence
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     import argparse
     from argparse import RawTextHelpFormatter
     parser = argparse.ArgumentParser(description='''Combine CARRA and CERRA data 
-                        Example usage: python merge_carra_cerra.py -pe 19980101-19980101 -dout /perm/ms/dk/nhd/carra_merge_vobs -dvobs /scratch/ms/dk/nhz/oprint/ ''',formatter_class=RawTextHelpFormatter)
+                        Example usage: python merge.py -pe 19980101-19980101 -dout /perm/ms/dk/nhd/carra_merge_vobs -dvobs /scratch/ms/dk/nhz/oprint/ ''',formatter_class=RawTextHelpFormatter)
 
     parser.add_argument('-pe','--period',metavar='Period to process (YYYYMMDD-YYYYMMDD)',
                                 type=str, default=None, required=True)
@@ -101,6 +101,10 @@ if __name__ == '__main__':
 
     parser.add_argument('-fw','--force_write',action='store_false') # set to true by default
                         #overwrite the existing data if the file already exists
+
+    
+    parser.add_argument('-sr','--sources',metavar='name of the two sources to merge',
+                                type=str, default='OBSCARRA,OBSCERRA', required=False)
 
     args = parser.parse_args()
 
@@ -122,23 +126,31 @@ if __name__ == '__main__':
     datadir = args.vobs_dir
     log_file = args.log_file
     force_write = args.force_write #True # Force writing. Only for debugging purposes
+    if not "," in args.sources:
+        print(f"Please provide the name of the two sources separated by a comma {args.sources}")
+        print("The first source overrides the second (ex: CARRA,CERRA)")
+        sys.exit()
+    else:
+        source = args.sources.split(",")
+    
 
     logFile=os.path.join(outdir,log_file)
     print("All screen output will be written to %s"%logFile)
 
     setup_logger(logFile,outScreen=False)
-    if (force_write): logger.info("NOTE: forcing overwriting of the vfld files")
+    if (force_write): logger.info("NOTE: forcing overwriting of the vobs files")
     #TODO: calculate dates already processed. Used to do this for vfld...
     #ts_vobs=vobs()        
     #forbidden_dates = ts_vobs.timestamps.simtimes.tolist() #which dates already processed
 
-    cerra = vo(period=period, datadir=os.path.join(datadir,"CERRA"),model="CERRA")
-    logger.info("CERRA data loaded")
-    carra = vo(period=period, datadir=os.path.join(datadir,"CARRA"),model="CARRA")
-    logger.info("CARRA data loaded")
-    models=[carra, cerra] #NOTE: Data from first source will replace any repeated values on the second
+    RA1 = vo(period=period, datadir=os.path.join(datadir,source[0]),model=source[0])
+    logger.info("{source[0]} data loaded")
+    RA2 = vo(period=period, datadir=os.path.join(datadir,source[1]),model=source[1])
+    logger.info("{source[1]} data loaded")
+
+    models=[RA1, RA2] #NOTE: Data from first source will replace any repeated values on the second
     logger.info("Merging synop data from all stations")
-    for date in carra.dates:
+    for date in RA1.dates:
         #if (date not in forbidden_dates) or (force_write) :
         if force_write:
             logger.debug("Merging date %s"%date)
@@ -165,7 +177,7 @@ if __name__ == '__main__':
                 logger.debug("No data available on %s or data available only for one model"%date)
                 logger.debug("Number of models: %d"%len(frames_synop))
                 #Delete this file if it exists:
-                ofile=os.path.join(outdir,''.join(['vfld',carra_branch,date]))
+                ofile=os.path.join(outdir,''.join(['vobs',date]))
                 logger.debug("Skipping this date and deleting %s if it exists"%ofile)
                 if os.path.exists(ofile):
                     os.remove(ofile)

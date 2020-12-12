@@ -6,6 +6,7 @@ import os, sys
 import numpy as np
 import pandas as pd
 import re
+import csv
 from collections import OrderedDict
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class vobs(object):
                 else:
                     ifiles.append('None')
         if (len(ifiles) == 0) or (len(set(ifiles)) == 1): # if all elements equal all None!
-            logger.info("WARNING: no data found for dates %s"%(str_dates))
+            logger.info(f"WARNING: no data found on {str_dates} for {self.model}")
             logger.info(ifiles)
         logger.debug("first file: %s"%(ifiles[0]))
         logger.debug("last file: %s"%(ifiles[-1]))
@@ -171,38 +172,85 @@ class vobs(object):
         #the result will contain vars with _x for OBS and _y for EXP
         return mergeOE
 
-    # open output file for writing the fcst/obs data for any variable
-    def write_var(infile,var,data,datum,ini):
-        # creates one file per day
-        units={'TT':'K','FF':'m/s','TD':'K','RH':'%','PS':'hPa'}
-        real_names={'TT':'Temperature','FF':'WindSpeed','TD':'DewPointTemperature','RH':'RelativeHumidity',
-                    'PS':'Pressure'}
-        leadtime = datum[8:10]
-        date = str(datum[0:8]) #date for the data below
-        date_file = str(datum[0:6])+str(ini) #date for the file. All data will go in one file per month
-        odir,fname=os.path.split(infile)
-        odir,stuff = os.path.split(odir)
-        ofile=os.path.join(odir,'synop_'+'_'.join([var,date_file])+'.txt')
-    
-    
-        exists = os.path.isfile(ofile)
-        data['date'] = date
-        data['leadtime'] = leadtime
-        data['p0']=-999. #np.nan
-        data['p11']=-999. #np.nan
-        data['pit']=-999. #np.nan
-        data=data.rename(columns={var+'_x': 'obs', var+'_y':'fcst',
-            'lat_x':'lat','lon_x':'lon','HH_x':'altitude','stationId':'location'})
-        data_write=data[['date','leadtime','location','lat','lon','altitude','obs','fcst','p0','p11','pit']]
-        if exists==True:
-            with open(ofile, 'a') as f:
-                data_write.to_csv(f, header=False,index=False,sep=' ')
-        else:
-            with open(ofile,'w') as f:
-                f.write('# variable: %s\n' %real_names[var])
-                f.write('# units: $%s$\n' %units[var])
-                data_write.to_csv(f,sep=' ',index=False) 
+#--------------------------------------------------------
+
+class vobs_format(object):
+    '''
+        Take dataframe with vobs data and format the
+        rows and columns to write the whole thing to 
+        a standard vobs format
+    '''
+
+    def __init__(self,  date=None,df_synop=None, df_temp=None, outdir=None):
+        self.date=date
+        self.df_synop = df_synop # pandas dataframe with synop data
+        self.df_temp = df_temp # pandas dataframe with temp data
+        self.outdir = outdir
+        self.synop_cols = self.df_synop.columns
+        self.df_out = self._format_data(df_synop,df_temp)
         
+    def _format_data(self,df_synop,df_temp):
+        '''
+        Format the data to write in vobs format.
+        First create a dummy set of column names with the 
+        same length as the length of the synop data.
+        Then put below the info about
+        ns_synop ns_temp version_4
+        number_of_vars_synop
+        list of vars from synop
+        synopdata
+        header temp
+        temp data
+        '''
+        colst = df_temp.columns
+        colss = df_synop.columns
+        ns_synop = df_synop.shape[0]
+
+        #Since I read all in string format, only the 
+        #strings not containing a . will be station names in the PP column
+        temp_stations_PP=[st for st in df_temp['PP'].values if '.' not in st]
+        ns_temp = len(temp_stations_PP)
+
+        #declaring these values for header as strings is the only way I can ensure these numbers are written as non-float
+        header_synop=[str(ns_synop), str(ns_temp), str(4)]
+        df_out=pd.DataFrame(columns=colss) 
+        if 'FI 0' in colss:
+            nvars_synop = df_synop.shape[1]-3 # subtract: stationId,lat,lon
+            varlist_synop=colss[3:]  
+            nvars=len(colss[3:])
+        else:
+            nvars_synop = df_synop.shape[1]-4 #subtract stationId,lat,lon,hh
+            varlist_synop=colss[4:]  
+            nvars=len(colss[4:])
+        #write first line of file:    
+        df_out=df_out.append({'stationId':header_synop[0],'lat':header_synop[1],'lon':header_synop[2]},ignore_index=True)
+        df_out=df_out.append({'lat':str(nvars)},ignore_index=True)
+        for var in varlist_synop:
+            df_out = df_out.append({'stationId':var},ignore_index=True)
+        df_out = df_out.append(df_synop,ignore_index=True)    
+
+        df_out = df_out.append({'stationId':str(10)},ignore_index=True) #10 pressure levels in vobs
+        df_out = df_out.append({'stationId':str(8)},ignore_index=True) #8 variables for temp profiles (constant)
+        for var in colst:
+            df_out = df_out.append({'stationId':var+' 0'},ignore_index=True) #include accumulation time for temp vars
+        fill_these = self.synop_cols[0:8]
+        for i in enumerate(df_temp['PP'].values):
+            collect_dict=OrderedDict()
+            for k,col in enumerate(colst):
+                collect_dict[fill_these[k]] = df_temp[col].values[i[0]]
+            df_out = df_out.append(collect_dict,ignore_index=True)
+        for col in df_out.columns:
+            df_out[col].replace('None', '', inplace=True)
+        return df_out
+
+
+    def write_vobs(self):
+        ofile=os.path.join(self.outdir,''.join(['vobs',self.date]))
+        #the extra QUOTE_NONE is to avoid using extra "" in output for var names, and the escapechar 
+        #so it won't complain about no escapechar unset
+        self.df_out.to_csv(ofile,sep=' ',header=False,index=False,na_rep='',quoting=csv.QUOTE_NONE,quotechar='',escapechar=' ')
+
+
 if __name__ == '__main__':
     period='20190601-20190601'
     datadir='/home/cap/data/from_ecmwf/codes/scripts_verif/contrib_verif/data/OBS'

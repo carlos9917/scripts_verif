@@ -19,6 +19,7 @@ import re
 import collections
 
 from vobs_merge import vobs as vo
+from vobs_merge import vobs_format as vof
 
 def drop_duplicates(df_temp):
     '''
@@ -155,11 +156,11 @@ if __name__ == '__main__':
                 df_synop = df_synop.drop_duplicates(['stationId'],keep='last') #keep
                 df_temp = pd.concat(dft,ignore_index=True)
                 drop_duplicates(df_temp)
-                mon_save= monitor(model=carra_branch,date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
-                mon_save.write_vfld()
+                vobs_save = vof(date=date,df_synop=df_synop,df_temp=df_temp,outdir=outdir)
+                vobs_save.write_vobs()
                 del df_synop
                 del df_temp
-                del mon_save
+                del vobs_save
             else:
                 logger.debug("No data available on %s or data available only for one model"%date)
                 logger.debug("Number of models: %d"%len(frames_synop))
@@ -172,4 +173,4 @@ if __name__ == '__main__':
 
         else:
             logger.info("Date %s already merged. Jumping to next date."%date)
-    logger.info("merge script finished")
+    logger.info(" >>>>> merge script finished <<<<< ")

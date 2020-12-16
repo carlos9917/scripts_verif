@@ -144,9 +144,9 @@ if __name__ == '__main__':
     #forbidden_dates = ts_vobs.timestamps.simtimes.tolist() #which dates already processed
 
     RA1 = vo(period=period, datadir=os.path.join(datadir,source[0]),model=source[0])
-    logger.info("{source[0]} data loaded")
+    logger.info(f"{source[0]} data loaded")
     RA2 = vo(period=period, datadir=os.path.join(datadir,source[1]),model=source[1])
-    logger.info("{source[1]} data loaded")
+    logger.info(f"{source[1]} data loaded")
 
     models=[RA1, RA2] #NOTE: Data from first source will replace any repeated values on the second
     logger.info("Merging synop data from all stations")

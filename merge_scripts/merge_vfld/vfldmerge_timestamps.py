@@ -11,8 +11,10 @@ import re
 import sys
 import subprocess
 import sqlite3
+#This is the where I am gonna write the processed data
 vfldout='/scratch/ms/dk/nhx/oprint/carra'
 #vfldout='/perm/ms/dk/nhd/carra_merge_vfld'
+DBASE="/scratch/ms/dk/nhd/CARRA/daily_logs.sqlite"
 
 def progress_stream(ifile):
     '''
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     ts_vfld=vfldmerge_timestamps()        
     vfld_merged = ts_vfld.timestamps.simtimes.tolist() #which dates already processed
     #which max dates per stream I can process now
-    max_dtg_stream = progress_stream('/home/ms/dk/nhd/scripts/carra/daily_logs.sqlite')
+    max_dtg_stream = progress_stream(DBASE)
     import pdb
     pdb.set_trace()
     #print("Counting data")

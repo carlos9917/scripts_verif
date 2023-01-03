@@ -1,0 +1,72 @@
+verif:
+  project_name: "enea43"
+  by_step: "3h"
+  fcst_model:
+    - enea43h22mbr000
+    - MEPS_prodmbr000
+    - EC9
+  lead_time: seq(0, 48, 3)
+  fcst_type: "eps"  #det or eps
+  grps: "default"  #use default groupings of leadtime and fcst_cycle
+  domains:  #what domains to verify ("All" will just consider all possible synops)
+    - "All"
+  members: #what members to verify for each ensemble. Include a list if the members differ between models. Set to NULL to use all available members in an ensemble
+    - NULL
+  lags: #how to lag the members for each ensemble. Include a list if the lags differ between models. Set to "0h" for no lagging
+    - "0h"
+  fcst_path: "/data/projects/nckf/danra/verification/FCTABLE"
+  obs_path: "/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED"
+  verif_path: "/data/projects/nckf/danra/verification/rds_files"
+pre:
+  fcst_model:
+    - enea43h22opr
+  vfld_path: "/data/projects/nckf/danra/vfld/"
+  vfld_by: "3h"
+  vfld_template:  #include one for each model if they are different
+    - "{fcst_model}/vfld{fcst_model}{YYYY}{MM}{DD}{HH}{LDT2}""
+  vobs_path: "/data/projects/nckf/danra/vfld/VOBS_DMI"
+  vobs_by: "1h"
+  members:  #include a list of members for each model if they are different
+    - 001
+    - 002
+    - 003  
+  lags: #include a list of lags for each model if they are different. For a given model, lags should be the same length as members. Set to NULL for no lags
+    - NULL  
+  params:
+    - T2m
+    - S10m
+    - Td2m
+    - RH2m
+    - Q2m
+    - Pmsl
+    - Pcp
+    - T
+    - S
+    - Td
+    - CCtot
+    - vis  
+post:
+  plot_output: "/data/projects/nckf/danra/verification/plots"
+  create_png: TRUE
+scorecards:  # Not fully implemented in user scripts
+  create_scrd: FALSE # Flag to run scorecard generation or not
+  ref_model:  EC9
+  fcst_model: enea43h22mbr000
+  parameters: # Can be different from parameters in "set_params" file"
+    - T2m
+    - S10m
+    - RH2m
+    - Pmsl
+    - T
+    - S  
+  scores:
+    - "bias"
+    - "rmse"
+  domains: # Construct scorecards for these domains only (must be in verif$domains)
+    - "All"
+  pooled_by: fcdate
+  numboot: 100
+  parallel: FALSE
+  num_cores: 1
+  plot_signif: TRUE # Plot the actual differnce between fcst_model and ref_model (and the confidence of that difference)
+

@@ -11,8 +11,8 @@ else
    SDATE=$1
    EDATE=$2
 fi
-
-cd /dmidata/users/cap/R/harp-verif/pre_processing
+HARPV=/dmidata/users/cap/R/harp-verif
+cd $HARPV/pre_processing
 
 for SOURCE in DMI IMO MARS; do
   CONFIG=config_for_merge/config_$SOURCE.yml

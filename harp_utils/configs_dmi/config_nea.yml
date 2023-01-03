@@ -1,0 +1,39 @@
+verif:
+  by_step: "12h"
+  fcst_model:
+    - enea43h22mbr000
+    - EC9  
+  lead_time: seq(0, 60, 3)
+  fcst_type: "det"  #det or eps
+  grps: "default"  #use default groupings of leadtime and fcst_cycle
+  domains:  #what domains to verify ("All" will just consider all possible synops)
+    - "All"
+  fcst_path: "/data/projects/nckf/danra/verification/FCTABLE"
+  obs_path: "/data/projects/nckf/danra/verification/OBSTABLE"
+  verif_path: "/data/projects/nckf/danra/verification/results/enea43h22mbr000"
+pre:
+  vfld_path: "/data/projects/nckf/danra/vfld"
+  vfld_by: "12h"
+  vfld_template:  #include one for each model if they are different
+    - "vfld"
+  vobs_path: "/data/projects/nckf/danra/vfld/VOBS_DMI"
+  vobs_by: "1h"
+  members:  #include a list of members for each model if they are different
+    - NULL
+  params:
+    - T2m
+    - S10m
+    - RH2m
+    - Q2m
+    - T
+post:
+  plot_output: "/data/projects/nckf/danra/verification/results"
+  create_png: TRUE
+scorecards:  # Not fully implemented in user scripts
+  ref_model: EC9 
+  fcst_model: cca_dini25a_l90_arome_3dvar_v1
+  parameters: 
+    - T2m
+    - S10m
+    - RH2m
+    - Pmsl

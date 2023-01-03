@@ -1,0 +1,42 @@
+# This is the general config file for the verification,
+# pre and postprocessing steps
+verif:
+  by_step: "12h"
+  fcst_model:
+    - cca_dini25a_l90_arome
+    - cca_dini25a_l90_arome_3dvar_v1
+    - EC9
+  ref_model: EC9 #for the scorecards
+  domain: DINI #domain to verify
+  lead_time: seq(0, 24, 1)
+  fcst_type: "det" #det or eps
+  grps: "leadtime"
+  fcst_path: "/scratch/ms/dk/nhd/vfld_vobs_sample/FCTABLE"
+  obs_path: "/scratch/ms/dk/nhd/vfld_vobs_sample/OBSTABLE"
+  verif_path: "/scratch/ms/dk/nhd/vfld_vobs_sample/verif_results"
+pre:
+  vfld_path: "/scratch/ms/ie/duuw/vfld_vobs_sample/vfld"
+  vobs_path: "/scratch/ms/ie/duuw/vfld_vobs_sample/vobs"
+  vfld_template:  #include one for each model if they are different. 
+    - "vfld"
+    - "vfld"
+    - "vfld"
+  params: #include below thresholds and scale factors, if any, in that order
+    - T2m
+    - S10m
+    - RH2m
+    - Pmsl
+    - AccPcp12h
+    - T
+post:
+  plot_output: "/scratch/ms/dk/nhd/vfld_vobs_sample/plots"
+  rds_path: "/scratch/ms/dk/nhd/vfld_vobs_sample/verif_out"
+scorecards:
+  ref_model: EC9
+  fcst_model: cca_dini25a_l90_arome
+  parameters:
+    - T2m
+    - S10m
+    - RH2m
+    - Pmsl
+  n_boot: 100 #for the scorecards bootstrapping

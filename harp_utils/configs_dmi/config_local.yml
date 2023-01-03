@@ -1,0 +1,64 @@
+verif:
+  project_name: "ecds_v1"
+  by_step: "12h"
+  fcst_model:
+    - cca_dini25a_l90_arome_3dvar_v1
+    - EC9
+  lead_time: seq(0, 48, 3)
+  fcst_type: "det"  #det or eps
+  grps: "default"  #use default groupings of leadtime and fcst_cycle
+  domains:  #what domains to verify ("All" will just consider all possible synops)
+    - "All"
+  fcst_path: "/scratch/ms/ie/duuw/vfld_vobs_sample/FCTABLE"
+  obs_path: "/scratch/ms/ie/duuw/vfld_vobs_sample/OBSTABLE"
+  verif_path: "/scratch/ms/dk/nhd/vfld_vobs_sample/verif_results"
+pre:
+  fcst_model:
+    - cca_dini25a_l90_arome_3dvar_v1
+  vfld_path: "/scratch/ms/ie/duuw/vfld_vobs_sample/vfld"
+  vfld_by: "12h"
+  vfld_template:  #include one for each model if they are different
+    - "vfld"
+  vobs_path: "/scratch/ms/dk/nhd/vfld_vobs_sample/vobs"
+  vobs_by: "3h"
+  members:  #include a list of members for each model if they are different
+    - NULL
+  params:
+    - T2m
+    - Tmax
+    - Tmin
+    - S10m
+    - Gmax
+    - Td2m
+    - RH2m
+    - Q2m
+    - Pmsl
+    - Pcp
+    - CCtot
+    - Cbase
+    - vis
+    - T
+    - S
+    - Td
+post:
+  plot_output: "/scratch/ms/dk/nhd/vfld_vobs_sample/plots"
+  create_png: TRUE
+scorecards:  # Not fully implemented in user scripts
+  create_scrd: FALSE # Flag to run scorecard generation or not
+  ref_model: EC9 
+  fcst_model: cca_dini25a_l90_arome_3dvar_v1
+  parameters: # Can be different from parameters in "set_params" file"
+    - T2m
+    - S10m
+    - RH2m
+    - Pmsl
+  scores:
+    - "bias"
+    - "rmse"
+  domains: # Construct scorecards for these domains only (must be in verif$domains)
+    - "All"
+  pooled_by: fcdate
+  numboot: 100
+  parallel: FALSE
+  num_cores: 1
+  plot_signif: TRUE # Plot the actual differnce between fcst_model and ref_model (and the confidence of that difference)

@@ -11,7 +11,7 @@ import numpy as np
 from typing import List, Set, Dict, Tuple
 
 #### MARS
-def get_mars_data(dbase:str) -> Tuple[pd.Dataframe,pd.DataFrame,pd.DataFrame,pd.DataFrame]:
+def get_mars_data(dbase:str) -> Tuple[pd.DataFrame,pd.DataFrame,pd.DataFrame,pd.DataFrame]:
     con=sqlite3.connect(dbase)
     cursor=con.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -23,7 +23,7 @@ def get_mars_data(dbase:str) -> Tuple[pd.Dataframe,pd.DataFrame,pd.DataFrame,pd.
     return synop_mars, temp_mars, synop_params_mars, temp_params_mars
 
 #### DMI
-def get_dmi_data(dbase:str) -> Tuple[pd.Dataframe,pd.DataFrame]:
+def get_dmi_data(dbase:str) -> Tuple[pd.DataFrame,pd.DataFrame]:
     con=sqlite3.connect(dbase)
     cursor=con.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")

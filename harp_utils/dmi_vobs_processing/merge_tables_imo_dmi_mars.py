@@ -64,7 +64,7 @@ def merge_all(dbase:str,
     
     con.close()
 
-if __name__="__main__":
+if __name__ == "__main__":
     dbase="/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED/OBSTABLE_DMI_MARS_2022.sqlite"
     synop,temp,synop_params,temp_params = get_dmi_mars(dbase)
     dbase=os.path.join("/data/projects/nckf/danra/vfld/vobs_to_merge","IMO","OBSTABLE_2022.sqlite")

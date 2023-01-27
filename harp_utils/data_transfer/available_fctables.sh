@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 module load R
+AVAIL_MODELS=(enea43h22mbr000 enea43h22opr ecds_v1)
 
 if [[ -z $1 ]]; then
    echo "Please provide YYYMM"
    echo "Alternatively, include the model name as second argument (ie, 202211 EC9)"
+   echo "Available models: ${AVAIL_MODELS[@]}"
    exit 1
 else
    DATE=$1

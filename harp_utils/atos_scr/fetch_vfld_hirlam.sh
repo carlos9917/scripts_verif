@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ]; then
     echo "Please provide year and month (2022 01)"
     echo "optionally provide model Default: enea43h22opr"
     exit 1
@@ -27,4 +27,20 @@ fetch_comeps()
   done
 }
 
-[ $MODEL == enea43h22opr ] && fetch_comeps
+fetch_model()
+{
+  DIR=$SCRATCH/verification/vfld/$MODEL
+  [ ! -d $DIR ] &&  mkdir -p $DIR
+  rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${MODEL}${YYYY}${MM}* $DIR/
+
+}
+
+if [ $MODEL == enea43h22opr ]; then
+
+echo "Fetching comeps"
+  fetch_comeps
+else
+echo "Fetching $MODEL"
+  fetch_model
+fi
+

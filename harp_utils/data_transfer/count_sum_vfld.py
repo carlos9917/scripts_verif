@@ -45,17 +45,35 @@ def count_vfld(date:str,
             files_missing.append(_file)      
     nm=len(files_missing)
     np=len(files_present)
-    print(f"{nm} missing")
-    print(f"{np} present")
+    print(f"{nm} missing on {date}")
+    print(f"{np} present on {date}")
     #diff =list(set(files_expected)^set(files_present))
-    if nm != np:
+    if nm != 0:
         import re
-        print("Following files missing")
         diff = list(set(files_expected).difference(set(files_present)))
         diff.sort()
-        for i in diff:
-            print(i)
-        #files_only=[os.path.split(s)[-1] for s in diff]
+        if eps:
+            cut_these=len("vfld")+len(model)+len("mbr")+3
+        else:    
+            cut_these=len("vfld")+len(model)
+        DTGs=[os.path.split(s)[-1][cut_these:] for s in diff]
+        dates=[os.path.split(s)[-1][cut_these:cut_these+8] for s in diff]
+        dates_sum=list(set(dates))
+        hours={}
+        cycles={}
+        #print("Following dates missing data")
+        for d in dates_sum:
+            cycles[d] =[]
+            hours[d] =[]
+            for dtg in DTGs:
+                if d == dtg[0:8]:
+                    cycles[d].append(dtg[8:10])
+                    hours[d].append(dtg[10:12])
+            missing_cycles=",".join(list(set(cycles[d])))
+            missing_hours=",".join(sorted(set(hours[d])))
+            out_model=model+"_missing_vfld.csv"
+            with open(out_model,"a+") as f:
+                f.write(f"{model} missing data on {d} for cycle(s) {missing_cycles} with hour(s) {missing_hours}\n")
         #for i in files_only:
         #    print(i)
         #dates = [re.findall(r"\d+",x)[2] for x in files_only]

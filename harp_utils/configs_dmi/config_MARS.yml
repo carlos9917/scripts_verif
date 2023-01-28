@@ -15,7 +15,7 @@ verif:
   lags: #how to lag the members for each ensemble. Include a list if the lags differ between models. Set to "0h" for no lagging
     - "0h"
   fcst_path: "/data/projects/nckf/danra/verification/FCTABLE"
-  obs_path: "/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED" #"/data/projects/nckf/danra/vfld/vobs_to_merge/DMI"
+  obs_path: "/data/projects/nckf/danra/vfld/vobs_to_merge/MARS" 
   verif_path: "/data/projects/nckf/danra/verification/rds_files"
 pre:
   fcst_model:

@@ -23,7 +23,7 @@ pre:
     - enea43h22mbr000
     - cca_dini25a_l90_arome_3dvar_v1
     - EC9  
-  vfld_path: "/ec/res4/scratch/duuw/verification/vfld"
+  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"

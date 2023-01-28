@@ -3,7 +3,6 @@ verif:
   by_step: "3h"
   fcst_model:
     - MEPS_prodmbr000
-    - EC9
   lead_time: seq(0, 48, 3)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
@@ -15,12 +14,14 @@ verif:
 pre:
   fcst_model:
     - MEPS_prodmbr000
-  vfld_path: "/data/projects/nckf/danra/vfld"
+  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
   vobs_path: "/data/projects/nckf/danra/vobs/DMI_VOBS"
   vobs_by: "1h"
+  lags: #include a list of lags for each model if they are different. For a given model, lags should be the same length as members. Set to NULL for no lags
+    - NULL  
   members:  #include a list of members for each model if they are different
     - NULL
   params:

@@ -2,8 +2,8 @@ verif:
   project_name: "ecds_v1"
   by_step: "12h"
   fcst_model:
-    - cca_dini25a_l90_arome_3dvar_v1
     - EC9
+    - cca_dini25a_l90_arome_3dvar_v1
   lead_time: seq(0, 48, 3)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
@@ -18,9 +18,8 @@ verif:
   verif_path: "/ec/res4/scratch/nhd/verification/rds_files"
 pre:
   fcst_model:
-    - cca_dini25a_l90_arome_3dvar_v1
     - EC9
-  vfld_path: "/ec/res4/scratch/duuw/verification/vfld"
+  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"

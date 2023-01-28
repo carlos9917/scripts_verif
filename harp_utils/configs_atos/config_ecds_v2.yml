@@ -3,8 +3,6 @@ verif:
   by_step: "3h"
   fcst_model:
     - enea43h22mbr000
-    - MEPS_prodmbr000
-    - EC9
   lead_time: seq(0, 48, 3)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
@@ -20,7 +18,7 @@ verif:
 pre:
   fcst_model:
     - ecds_v2
-  vfld_path: "/data/projects/nckf/danra/vfld"
+  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"

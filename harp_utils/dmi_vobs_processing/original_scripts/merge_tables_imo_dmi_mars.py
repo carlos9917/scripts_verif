@@ -7,8 +7,9 @@ import sqlite3
 import pandas as pd
 import os
 import numpy as np
+LOCAL_PATH="/ec/res4/scratch/nhd/verification/DMI_data/vobs"
 
-dbase=os.path.join("/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED/OBSTABLE_DMI_MARS_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,"OBSTABLE_DMI_MARS_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -20,7 +21,7 @@ con.close()
 
 #### IMO
 model="IMO"
-dbase=os.path.join("/data/projects/nckf/danra/vfld/vobs_to_merge",model,"OBSTABLE_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,model,"OBSTABLE_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -42,7 +43,7 @@ list_vars = ",".join(df_synop.columns.to_list())
 
 #Create the new database with the merged data
 # new database
-dbase = "/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED/OBSTABLE_2023.sqlite"
+dbase = os.path.join(LOCAL_PATH,"OBSTABLE_2023.sqlite")
 con = sqlite3.connect(dbase)
 merge_synop.to_sql(name="SYNOP",con=con,if_exists="replace",index=False)
 merge_synop_params.to_sql(name="SYNOP_PARAMS",con=con,if_exists="replace",index=False)

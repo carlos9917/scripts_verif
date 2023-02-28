@@ -32,6 +32,7 @@ if [ -z $2 ]; then
      #Rscript ./pull_dates_sql.R -dbase  $DBASE -csv_file "available_dates_$MODEL.csv"
      cd $HVERIF/pre_processing
      Rscript ./pull_dates_sql.R -dbase  $DBASE
+     Rscript ./pull_dates_sql.R -dbase  $DBASE -csv_file "available_dates_$MODEL.csv"
      cd -
    else
      echo "$DBASE does not exist for $MODEL"   

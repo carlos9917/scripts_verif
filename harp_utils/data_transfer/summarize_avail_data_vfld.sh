@@ -2,8 +2,8 @@
 module load conda
 conda activate py38
 
-D1=20230101
-D2=20230125
+D1=20230201
+D2=20230217
 MODEL=enea43h22mbr000
 MODEL=EC9
 MODEL=MEPS_prodmbr000

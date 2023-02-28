@@ -1,5 +1,5 @@
 verif:
-  project_name: "enea43"
+  project_name: "enea43_intercomparison"
   by_step: "6h"
   fcst_model:
     - enea43h22mbr000

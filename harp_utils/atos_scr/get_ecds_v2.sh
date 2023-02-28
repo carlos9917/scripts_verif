@@ -5,7 +5,7 @@ D2=20230121
 TODO=1
 if [ $# -ne 3 ]; then
     echo "Please provide first and last date (ie, $D1 $D2)"
-    echo "Optionall indicate if send to DMI (1: send to DMI, 2: copy here. Default: $TODO)"
+    echo "Optionall indicate if send to DMI (1: send to DMI, 2: copy here, 3: fetch from ecfs. Default: $TODO)"
     exit 1
   else
     D1=$1
@@ -58,5 +58,25 @@ copy_unpack_locally()
   cd -
 }
 
+fetch_ecfs()
+{
+  YYYY=${D1:0:4}
+  MM=${D1:4:2}
+  echo "Fetching tarball for $YYYY $MM"
+  PACK=vfldecds_v2${YYYY}${MM}.tar
+  [ ! -f $DEST/$TAR ] && ecp ec:/duuw/harmonie/ecds_v2/vfld/$TAR $DEST
+  cd $DEST
+  for DATE in $(seq $D1 $D2); do  
+   tar xvf $PACK vfldecds_v2${DATE}??.tar.gz
+   for TAR in vfldecds_v2${DATE}??.tar.gz; do
+     tar zxvf $TAR
+     rm $TAR
+   done
+  done
+  rm $PACK
+  cd -
+}
+
 [ $TODO == 1 ] && copy_and_send
 [ $TODO == 2 ] && copy_unpack_locally
+[ $TODO == 3 ] && fetch_ecfs

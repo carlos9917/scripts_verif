@@ -9,7 +9,8 @@ import pandas as pd
 import os
 import numpy as np
 model="MARS"
-dbase=os.path.join("/data/projects/nckf/danra/vfld/vobs_to_merge",model,"OBSTABLE_2023.sqlite")
+LOCAL_PATH="/ec/res4/scratch/nhd/verification/DMI_data/vobs"
+dbase=os.path.join(LOCAL_PATH,model,"OBSTABLE_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -21,7 +22,7 @@ con.close()
 
 #### DMI
 model="DMI"
-dbase=os.path.join("/data/projects/nckf/danra/vfld/vobs_to_merge",model,"OBSTABLE_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,model,"OBSTABLE_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -43,7 +44,7 @@ list_vars = ",".join(df_synop.columns.to_list())
 
 #Create the new database with the merged data
 # new database
-dbase = "/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED/OBSTABLE_DMI_MARS_2023.sqlite"
+dbase = os.path.join(LOCAL_PATH,"OBSTABLE_DMI_MARS_2023.sqlite")
 create_table = """
 CREATE TABLE IF NOT EXISTS SYNOP ("""+list_vars+""",PRIMARY KEY (validdate,SID));
 """
@@ -58,10 +59,3 @@ con.execute(create_index)
 temp_params_mars.to_sql(name="TEMP_PARAMS",con=con,if_exists="replace",index=False)
 
 con.close()
-#df_synop.to_sql(name="SYNOP_params",con=con,if_exists="replace",index=False)
-#con.execute('ALTER TABLE SYNOP ADD PRIMARY KEY (validdate, SID);')
-#df_synop.to_sql(name='SYNOP', con=con)
-#create_synop_params="CREATE TABLE SYNOP_params(parameter VARCHAR, accum_hours REAL, units VARCHAR)"
-#fillup this table
-#for col in df_synop.columns:
-

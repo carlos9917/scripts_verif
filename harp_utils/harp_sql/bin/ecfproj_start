@@ -1,0 +1,147 @@
+#!/bin/bash
+
+# This script will create the ecFlow suite definition and load it into the
+# ecfFlow server. It can take a 'host' argument for a specific environment
+
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+unline=$(tput smul)
+
+# Define a usage function
+usage() {
+
+PROGNAME=`basename $0`
+
+cat << USAGE
+
+${bold}NAME${normal}
+        ${PROGNAME} - Start a new ecFlow project
+
+${bold}USAGE${normal}
+        ${PROGNAME} -w <ecfproj-work> -e <ecfproj-name> -c <configuration> [-s DTG] [ -h ]
+
+${bold}DESCRIPTION${normal}
+        Script to start new ecFlow project suite
+
+${bold}OPTIONS${normal}
+        -w ${unline}ecfproj-work${normal}
+           Directory for ecFlow tasks and log files
+
+        -e ${unline}ecfproj-name${normal}
+           Name for your ecFlow suite
+
+        -c ${unline}system-configuration${normal}
+           System confgiuration file. config-sh/config.<system-configuration> file must exist.
+        
+        -s ${unline}start DTG${normal}
+           Define DTG to start processing [OPTIONAL]
+        
+        -h Help! Print usage information.
+
+USAGE
+}
+
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -c|--config|--configuration)
+      shift
+      if test $# -gt 0; then
+        export ECFPROJ_CONFIG=$1
+      else
+        echo "$0: No configuration specified '-c'"
+        echo "Try '$0 -h' for more information"
+        exit 1
+      fi
+      shift
+      ;;
+    -w|--workdir) # Work directory
+      shift
+      if test $# -gt 0; then
+        export ECFPROJ_WORK=$1
+      fi
+      shift
+      ;;
+    -e|--exp|--experiment) # Name of this experiment
+      shift
+      if test $# -gt 0; then
+        export EXP=$1
+      fi
+      shift
+      ;;
+    -s|--start) # DTG to start. By defualt, it follows the operational schedule
+      shift
+      if test $# -gt 0; then
+        export START_DTG=$1
+      fi
+      shift
+      ;;
+    -f|--force) # If a suite of the same name exists in the ecFlow server, replace it
+      echo "Force flag selected"
+      echo "  If this EXP exists in ecFlow it will be overwritten"
+      export FORCE="True"
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+# Default host is reaserve
+default_config="aa"
+
+# Default experiment name
+# This can be changed with the -e flag to set up a parallel experiment in the
+# same ecFlow server
+default_exp="harp_sqlite"
+export EXP=${EXP:-$default_exp}
+
+# Default start_dtg follows operational cycling
+default_start_dtg=$(date +%Y%m%d%H)
+
+# The location of this script
+THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+ECFPROJ_LIB=$(dirname ${THIS_SCRIPT_DIR})
+export ECFPROJ_LIB
+
+# Default directory for the suite
+default_work="$HOME/ecflow_suites/${EXP}/work"
+
+# Set options
+START_DTG=${START_DTG:-$default_start_dtg}
+export ECFPROJ_WORK=${ECFPROJ_WORK:-$default_work}
+export ECFPROJ_CONFIG=${ECFPROJ_CONFIG:-$default_config}
+export FORCE=${FORCE:-"False"}
+
+# Make the work directory
+[ -d ${ECFPROJ_WORK} ] || mkdir -p ${ECFPROJ_WORK}
+
+# START_DTG must be 10 characters long and must only be integers
+if [[ ${#START_DTG} -ne 10 ]] || ! [[ $START_DTG =~ ^[0-9]+$ ]]
+then
+    echo "ERROR: START_DTG must be in YYYYMMDDHH format"
+    exit 1
+fi
+export START_DTG
+
+# Make sure such a config exists
+if ! [ -s ${ECFPROJ_LIB}/share/config/config.${ECFPROJ_CONFIG} ] 
+then
+    echo "ERROR: No configuration file could be found for ${ECFPROJ_CONFIG}"
+    echo "  ${ECFPROJ_LIB}/share/config/config.${ECFPROJ_CONFIG} does not exist"
+    exit 1
+fi
+
+# source system settings
+. ${ECFPROJ_LIB}/share/config/config.${ECFPROJ_CONFIG}
+echo "WARNING: Using this automatic value for START_DTG: $START_DTG"
+echo "Please set it up as argument if another value is needed"
+# Create and load the suite
+python3 ${ECFPROJ_LIB}/bin/create_suite.py
+
+exit 0

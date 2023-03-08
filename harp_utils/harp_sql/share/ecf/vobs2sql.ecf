@@ -1,0 +1,29 @@
+%include <%SUB_H%>
+%include <head.h>
+%include <ecfprojhead.h>
+
+%manual
+bufr2vobs2sql.ecf: 
+
+REFERENCE:
+    TEST
+
+DESCRIPTION:
+    Some description in here
+
+1ST LINE:
+    Instructions for "1st line" operators.
+
+2ND LINE:
+    Instructions for "2nd line" on-call team.
+
+%end
+
+%ECFPROJ_LIB%/bin/vobs2sql.sh $YMD || exit 1
+
+%include <tail.h>
+
+%comment
+$Id$
+%end
+

@@ -11,6 +11,7 @@ if [[ -z $1 ]]; then
 else
    DATE=$1
 fi
+CY=12 # which cycle I am checking in the T2m data
 
 FPATH=$SCRATCH/verification/DMI_data
 HVERIF=/home/nhd/R/harp-verif/
@@ -21,18 +22,20 @@ if [ $DATE == AVAIL ]; then
 fi
 YYYY=`echo $DATE | awk '{print substr($1,1,4)}'`
 MM=`echo $DATE | awk '{print substr($1,5,2)}'`
+echo "Checking data in cycle $CY (FCTABLE_T2m_${YYYY}${MM}_$CY.sqlite)"
 
 if [ -z $2 ]; then
   for MODEL in ${MODELS[@]}; do
   CHECK=$(printf "\nchecking $MODEL\n")
   echo $CHECK
   # Quick check the availabilty of each
-  DBASE=$FPATH/FCTABLE/$MODEL/$YYYY/$MM/FCTABLE_T2m_${YYYY}${MM}_00.sqlite
+  DBASE=$FPATH/FCTABLE/$MODEL/$YYYY/$MM/FCTABLE_T2m_${YYYY}${MM}_$CY.sqlite
   if [ -f $DBASE ]; then
      #Rscript ./pull_dates_sql.R -dbase  $DBASE -csv_file "available_dates_$MODEL.csv"
      cd $HVERIF/pre_processing
      Rscript ./pull_dates_sql.R -dbase  $DBASE
-     Rscript ./pull_dates_sql.R -dbase  $DBASE -csv_file "available_dates_$MODEL.csv"
+     # to dump the tables availability in csv files
+     #Rscript ./pull_dates_sql.R -dbase  $DBASE -csv_file "available_dates_$MODEL.csv"
      cd -
    else
      echo "$DBASE does not exist for $MODEL"   
@@ -44,8 +47,7 @@ else
     ls $SCRATCH/verification/vfld/
     exit 1
   fi
-  DBASE=$FPATH/FCTABLE/$MODEL/$YYYY/$MM/FCTABLE_T2m_${YYYY}${MM}_00.sqlite
-  DBASE=$FPATH/FCTABLE/$MODEL/$YYYY/$MM/FCTABLE_T2m_${YYYY}${MM}_12.sqlite
+  DBASE=$FPATH/FCTABLE/$MODEL/$YYYY/$MM/FCTABLE_T2m_${YYYY}${MM}_$CY.sqlite
   if [ -f $DBASE ]; then
      cd $HVERIF/pre_processing
      Rscript ./pull_dates_sql.R -dbase  $DBASE

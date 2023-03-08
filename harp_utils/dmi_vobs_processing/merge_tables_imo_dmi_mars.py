@@ -2,12 +2,23 @@
 """
 Merge the table DMI_MARS with the IMO table
 IMO data takes precedence
+Input: merged dbase from DMI and MARS data: OBSTABLE_DMI_MARS_2023.sqlite
+Output: merged dbase with IMO and the sqlite file above
 """
 import sqlite3
 import pandas as pd
 import os
 import numpy as np
+import sys
+
 LOCAL_PATH="/ec/res4/scratch/nhd/verification/DMI_data/vobs"
+if len(sys.argv) == 1:
+    print("Path for the databases not provided")
+    print(f"Using hard-coded value: {LOCAL_PATH}")
+else:
+    LOCAL_PATH=sys.argv[1]
+    print(f"CLI provided path for the data: {LOCAL_PATH}")
+
 
 dbase=os.path.join(LOCAL_PATH,"OBSTABLE_DMI_MARS_2023.sqlite")
 con=sqlite3.connect(dbase)
@@ -20,8 +31,8 @@ temp_params_mars = pd.read_sql("SELECT * FROM TEMP_params", con)
 con.close()
 
 #### IMO
-model="IMO"
-dbase=os.path.join(LOCAL_PATH,model,"OBSTABLE_2023.sqlite")
+source="IMO"
+dbase=os.path.join(LOCAL_PATH,source,"OBSTABLE_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -57,10 +68,3 @@ con.execute(create_index)
 temp_params_mars.to_sql(name="TEMP_PARAMS",con=con,if_exists="replace",index=False)
 
 con.close()
-#df_synop.to_sql(name="SYNOP_params",con=con,if_exists="replace",index=False)
-#con.execute('ALTER TABLE SYNOP ADD PRIMARY KEY (validdate, SID);')
-#df_synop.to_sql(name='SYNOP', con=con)
-#create_synop_params="CREATE TABLE SYNOP_params(parameter VARCHAR, accum_hours REAL, units VARCHAR)"
-#fillup this table
-#for col in df_synop.columns:
-

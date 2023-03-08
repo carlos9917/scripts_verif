@@ -3,14 +3,28 @@
 """
 Merge tables from DMI and MARS
 DMI data takes precedence
+Input: OBSTABLE from MARS
+       OBSTABLE from DMI
+Output: merged of the two above
 """
 import sqlite3
 import pandas as pd
 import os
 import numpy as np
-model="MARS"
+import sys
+
 LOCAL_PATH="/ec/res4/scratch/nhd/verification/DMI_data/vobs"
-dbase=os.path.join(LOCAL_PATH,model,"OBSTABLE_2023.sqlite")
+if len(sys.argv) == 1:
+    print("Path for the databases not provided")
+    print(f"Using hard-coded value: {LOCAL_PATH}")
+else:
+    LOCAL_PATH=sys.argv[1]
+    print(f"CLI provided path for the data: {LOCAL_PATH}")
+   
+
+### Read database with MARS data
+source="MARS"
+dbase=os.path.join(LOCAL_PATH,source,"OBSTABLE_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -20,9 +34,9 @@ synop_params_mars = pd.read_sql("SELECT * FROM SYNOP_params", con)
 temp_params_mars = pd.read_sql("SELECT * FROM TEMP_params", con)
 con.close()
 
-#### DMI
-model="DMI"
-dbase=os.path.join(LOCAL_PATH,model,"OBSTABLE_2023.sqlite")
+#### Read database with DMI data
+source="DMI"
+dbase=os.path.join(LOCAL_PATH,source,"OBSTABLE_2023.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -32,7 +46,7 @@ synop_params_dmi = pd.read_sql("SELECT * FROM SYNOP_params", con)
 con.close()
 
 # merge dmi and mars. There is only synop in dmi source
-#merge synop. DMI is kept
+# merge synop. DMI is kept
 df_synop = pd.concat([synop_mars,synop_dmi],sort=False).fillna(np.nan)
 merge_synop = df_synop.drop_duplicates(['validdate','SID'],keep='last')
 

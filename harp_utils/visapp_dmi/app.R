@@ -61,6 +61,12 @@ if (is.null(img_dir)){
   img_dir <- "/data/projects/nckf/danra/verification/plots"
 }
 
+# Seasonal/Monthly/Rolling switch for date display in the app.
+# To be use in oper context, assumes that Season/Monthly/Rolling directories
+# exist under img_dir/experiment.
+# Default value is FALSE
+smr_ind=FALSE
+
 #================================================#
 # DEFINE COMMON VARIABLES:
 # 1) EXPNAME (AND LABEL)
@@ -147,7 +153,13 @@ all_stations             <- list("All stations"     = "All",
                                  "Netherlands Oper" = "NL_OP",
                                  "Iceland"          = "IS",
                                  "Ireland"          = "IRL",
-                                 "Ireland+UK"       = "IE_EN"
+                                 "Ireland+UK"       = "IE_EN",
+                                 "Scandinavia"      = "SCD",
+                                 "France"           = "FR",
+                                 "North North Sea"  = "NNS",
+                                 "North Sea"        = "NorthSea",
+                                 "Germany"          = "DE",
+                                 "Alps"             = "Alps"
 ) 
 
 # Score separator
@@ -157,7 +169,10 @@ score_sep="AND"
 # Ensemble
 all_ens_ssum_scores      <- list("Spread Skill"              = paste0("rmse",score_sep,"spread-lt"),
                                  "Mean Bias RMSE"            = paste0("mean_bias",score_sep,"rmse-lt"),
+                                 "Mean Bias STDV"            = paste0("mean_bias",score_sep,"stde-lt"),
+                                 "Spread Skill Ratio"        = "spread_skill_ratio-lt",
                                  "CRPS"                      = "crps-lt",
+                                 "Fair CRPS"                 = "fair_crps-lt",
                                  "Member Bias"               = "mbrbias-lt",
                                  "Member RMSE"               = "mbrrmse-lt",
                                  "Rank Histogram"            = "rank_histogram-NA",
@@ -165,25 +180,33 @@ all_ens_ssum_scores      <- list("Spread Skill"              = paste0("rmse",sco
                                  "Mean Bias STDV Timeseries" = paste0("mean_bias",score_sep,"stde-vd"),
                                  "Mean Forecast Timeseries"  = "timeseries-vd",
                                  "Mean Frequency Dist"       = "freqdist-NA",
+                                 "Mean Frequency Hist"       = "freqhist-cls",
+                                 "Mean Frequency Bias"       = "freq_bias-cls",
                                  "Mean Scatterplot"          = "scatterplot-NA"
 )
 
 # Ensemble control member
 all_ensctrl_ssum_scores  <- list("Bias RMSE"            = paste0("bias",score_sep,"rmse-lt"),
+                                 "Bias STDV"            = paste0("bias",score_sep,"stde-lt"),
                                  "DailyVar"             = "dailyvar-vh",
                                  "Forecast Timeseries"  = "timeseries-vd",
                                  "Bias STDV Timeseries" = paste0("bias",score_sep,"stde-vd"),
                                  "Frequency Dist"       = "freqdist-NA",
+                                 "Frequency Hist"       = "freqhist-cls",
+                                 "Frequency Bias"       = "freq_bias-cls",
                                  "Scatterplot"          = "scatterplot-NA"
 )
 all_ensctrl_ssum_scores  <- lapply(all_ensctrl_ssum_scores,function(x) paste0("ctrl",x))
 
 # Deterministic experiment 
 all_det_ssum_scores      <- list("Bias RMSE"            = paste0("bias",score_sep,"rmse-lt"),
+                                 "Bias STDV"            = paste0("bias",score_sep,"stde-lt"),
                                  "DailyVar"             = "dailyvar-vh",
                                  "Forecast Timeseries"  = "timeseries-vd",
                                  "Bias STDV Timeseries" = paste0("bias",score_sep,"stde-vd"),
                                  "Frequency Dist"       = "freqdist-NA",
+                                 "Frequency Hist"       = "freqhist-cls",
+                                 "Frequency Bias"       = "freq_bias-cls",
                                  "Scatterplot"          = "scatterplot-NA"
 )
 
@@ -240,7 +263,8 @@ all_det_pl_scores        <- lapply(all_det_pl_scores,function(x) paste0(x,"-lt")
 all_ens_prof_scores      <- list("Mean Bias RMSE" = paste0("mean_bias",score_sep,"rmse"),
                                  "Mean Bias STDV" = paste0("mean_bias",score_sep,"stde"),
                                  "Spread Skill"   = paste0("rmse",score_sep,"spread"),
-                                 "CRPS"           = "crps")
+                                 "CRPS"           = "crps",
+                                 "Fair CRPS"      = "fair_crps")
 all_ens_prof_scores      <- lapply(all_ens_prof_scores,function(x) paste0(x,"-pr"))
 
 # Ensemble control member
@@ -258,7 +282,8 @@ all_det_prof_scores      <- lapply(all_det_prof_scores,function(x) paste0(x,"-pr
 all_ens_sdiffs_scores <- list("Mean Bias"    = "mean_bias-lt",
                               "RMSE"         = "rmse-lt",
                               "Spread"       = "spread-lt",
-                              "CRPS"         = "crps-lt")
+                              "CRPS"         = "crps-lt",
+                              "Fair CRPS"    = "fair_crps-lt")
 all_ens_sdiffs_scores <- lapply(all_ens_sdiffs_scores,function(x) paste0("sdiff",x))
 
 # Deterministic score diffs
@@ -316,9 +341,11 @@ ui <- shiny::tags$html(
                                                            choices  = exps_for_tab,
                                                            selected = exps_for_tab[[1]],
                                                            outline = TRUE),
+                          shiny::uiOutput("timetypeui"),
+                          shiny::selectInput('currentyear',label='Year',
+                                             choices = "Waiting..."),
                           shinyWidgets::prettyRadioButtons('dates',label='Dates',
-                                                           choices = "Waiting...",
-                                                           outline = TRUE),
+                                             choices = "Waiting...",outline = TRUE),
                           shiny::tabsetPanel(
                             id = "vartype",
                             shiny::tabPanel("Surface",
@@ -377,21 +404,104 @@ server <- function(input, output, session) {
   
   # Indicator for missing data
   mdi <- "No data"
+
+  # Render UI to change the "date" section format if the Seasonal/Monthly/Rolling
+  # switch is TRUE (to be used for oper)
+  output$timetypeui <- shiny::renderUI({
+    if (smr_ind){
+      dso = tagList()
+      dso[[1]] <- shiny::tabsetPanel(
+        id="timetype",
+        shiny::tabPanel("Seasonal"),
+        shiny::tabPanel("Monthly"),
+        shiny::tabPanel("Rolling")
+      )
+      dso
+    } else {
+      # Just a dummy output
+      dso = tagList()
+      dso
+    }
+   })
   
+  # Get available years for a given experiment and update selection
+  c_years <- shiny::reactive({
+    # Again add a switch if smr_ind is TRUE
+    if (smr_ind){
+      dl <- list.dirs(path=file.path(img_dir,input$expname,input$timetype),
+                      full.names=FALSE,recursive=FALSE)
+    } else {
+      dl <- list.dirs(path=file.path(img_dir,input$expname),
+                      full.names=FALSE,recursive=FALSE)
+    }
+    # Match only directories with YYYYMMDDHH-YYYYMMDDHH format
+    dl <- dl[str_detect(dl,'^[0-9]{10}-[0-9]{10}$')]
+    # Date formatting
+    if (!is.null(dl) && length(dl)>0) {
+      files_years <- data.frame(dates = dl) %>%
+        tidyr::separate(.data$dates, c("startdate", "enddate"), "-") %>%
+        dplyr::arrange(.data$startdate, .data$enddate) %>%
+        dplyr::mutate(
+          years = substr(.data$startdate,1,4)
+        ) %>% dplyr::pull(.data$years)
+      files_years
+    } else {
+      mdi
+    }
+  })
+  
+  # Is year already selected and valid?
+  selected_year <- shiny::reactive({
+    yc_tmp <- NULL
+    if (!is.null(input$currentyear) && (input$currentyear %in% unlist(c_years(),use.names = FALSE))){
+      yc_tmp <- input$currentyear
+    } else if (c_years()[1] == mdi){
+      mdi
+    }
+    yc_tmp
+  })
+  
+  # Render a tabpanel for the available years
+  #output$yearselect <- shiny::renderUI({
+  #  mytabs <- lapply(c_years(), tabPanel)
+  #  do.call(tabsetPanel,c(mytabs,list(id="currentyear",selected=selected_year())))
+  #})
+  # Use select input for the years
+  shiny::observe(
+    shiny::updateSelectInput(
+      session,
+      "currentyear",
+      choices = c_years(),
+      selected = selected_year()
+    )
+  )
+
   # Get current dates for a given experiment and update selection
   c_dates <- shiny::reactive({
-    dl <- list.dirs(path=file.path(img_dir,input$expname),
-                    full.names=FALSE,recursive=FALSE)
+    req(input$currentyear)
+    # Again add a switch if smr_ind is TRUE
+    if (smr_ind){
+      dl <- list.dirs(path=file.path(img_dir,input$expname,input$timetype),
+                      full.names=FALSE,recursive=FALSE)
+    } else {
+      dl <- list.dirs(path=file.path(img_dir,input$expname),
+                      full.names=FALSE,recursive=FALSE)
+    }
+    # Match only directories with YYYYMMDDHH-YYYYMMDDHH format
+    dl <- dl[str_detect(dl,'^[0-9]{10}-[0-9]{10}$')]
     # Date formatting
     if (!is.null(dl) && length(dl)>0) {
       files_dates <- data.frame(dates = dl) %>%
         tidyr::separate(.data$dates, c("startdate", "enddate"), "-") %>%
         dplyr::arrange(.data$startdate, .data$enddate) %>%
         dplyr::mutate(
-          dates = paste(.data$startdate, .data$enddate, sep = "-")
+          dates = paste(.data$startdate, .data$enddate, sep = "-"),
+          years = substr(.data$startdate,1,4)
         ) %>%
+        dplyr::filter(.data$years == input$currentyear) %>%
         dplyr::pull(.data$dates)
       
+      req(length(files_dates)>0) # Avoids an abort for selected date below!
       split_dates <- strsplit(files_dates, "-")
       dates_start <- purrr::map(split_dates, ~format(lubridate::ymd_h(.x[1]),"%Y/%m/%d %HZ"))
       dates_end   <- purrr::map(split_dates, ~format(lubridate::ymd_h(.x[2]),"%Y/%m/%d %HZ"))
@@ -427,7 +537,11 @@ server <- function(input, output, session) {
   
   # Based on experiment name and dates, define the directory where images are stored
   data_dirname <- shiny::reactive({
-    file.path(img_dir,input$expname,input$dates)
+    if (smr_ind){
+      file.path(img_dir,input$expname,input$timetype,input$dates)
+    } else {
+      file.path(img_dir,input$expname,input$dates)
+    }
   })
   # Add an extra check to handle the case where the project name is included
   # as the first element of the png name

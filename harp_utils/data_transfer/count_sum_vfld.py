@@ -5,7 +5,12 @@ import time
 from datetime import datetime
 import sys
 from calendar import monthrange
-models={"enea43h22opr":{"flen":52,"fstep":3,"step_cyc":6,"mems":[i for i in range(0,19)]}}
+models={
+        "enea43h22opr":{"flen":52,"fstep":3,"step_cyc":6,"mems":[i for i in range(0,19)]},
+        "enea43h22mbr000":{"flen":60,"fstep":3,"step_cyc":3},
+        "EC9":{"flen":60,"fstep":3,"step_cyc":6},
+        "MEPS_prodmbr000":{"flen":60,"fstep":3,"step_cyc":3}
+        }
 def count_vfld(date:str,
                model:str,
                eps:bool,
@@ -90,12 +95,15 @@ if __name__=="__main__":
     parser.add_argument('-model',metavar="model",default=None,
                         type=str,
                         required=True)
+    parser.add_argument('-eps',action='store_true') # set to false by default. If given, do eps
+
+
     args = parser.parse_args()
     date = args.check_date
     model = args.model
+    eps = args.eps
     vfld_path = "/ec/res4/scratch/nhd/verification/vfld/"
     flen=models[model]["flen"]
     fstep=models[model]["fstep"]
     step_cyc=models[model]["step_cyc"]
-    eps=True
     count_vfld(date,model,eps,flen,fstep,step_cyc,vfld_path)

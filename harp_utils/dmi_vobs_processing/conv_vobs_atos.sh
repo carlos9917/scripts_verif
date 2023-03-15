@@ -12,10 +12,12 @@ else
    SDATE=$1
    EDATE=$2
 fi
+module load R
+HARPV=/home/nhd/R/harp-verif
+cd $HARPV/pre_processing
 
-#for SOURCE in DMI IMO MARS; do
-for SOURCE in MARS; do
-  CONFIG=config_for_merge/config_$SOURCE.yml
+for SOURCE in DMI IMO MARS; do
+  CONFIG=config_dmi/config_$SOURCE.yml
   echo "Using $CONFIG"
   ./vobs2sql.R -start_date $SDATE -end_date $EDATE -config_file $CONFIG
 done

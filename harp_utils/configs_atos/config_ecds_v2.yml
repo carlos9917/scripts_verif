@@ -1,10 +1,8 @@
 verif:
-  project_name: "enea43"
+  project_name: "ecds_v2"
   by_step: "3h"
   fcst_model:
     - enea43h22mbr000
-    - MEPS_prodmbr000
-    - EC9
   lead_time: seq(0, 48, 3)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
@@ -14,17 +12,17 @@ verif:
     - NULL
   lags: #how to lag the members for each ensemble. Include a list if the lags differ between models. Set to "0h" for no lagging
     - "0h"
-  fcst_path: "/data/projects/nckf/danra/verification/FCTABLE"
-  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs/MARS"
-  verif_path: "/data/projects/nckf/danra/verification/rds_files"
+  fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE"
+  obs_path: "/data/projects/nckf/danra/vfld/vobs_to_merge/OBSTABLE_MERGED"
+  verif_path: "/ec/res4/scratch/nhd/verification/DMI_data/rds_files"
 pre:
   fcst_model:
-    - enea43h22mbr000
-  vfld_path: "/data/projects/nckf/danra/vfld"
+    - ecds_v2
+  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
-  vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs/MARS"
+  vobs_path: "/data/projects/nckf/danra/vfld/VOBS_DMI"
   vobs_by: "1h"
   members:  #include a list of members for each model if they are different
     - NULL
@@ -41,8 +39,10 @@ pre:
     - T
     - S
     - Td
+    - CCtot
+    - vis  
 post:
-  plot_output: "/data/projects/nckf/danra/verification/plots"
+  plot_output: "/ec/res4/scratch/nhd/verification/DMI_data/plots"
   create_png: TRUE
 scorecards:  # Not fully implemented in user scripts
   create_scrd: FALSE # Flag to run scorecard generation or not

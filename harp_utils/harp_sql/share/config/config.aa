@@ -1,0 +1,77 @@
+#
+# TEST!
+# harp sqlite processing system configuration for ECMWF Atos
+#
+
+# harp-verif directory
+HARP_DIR="$HOME/R/harp-verif"
+
+# Model vfld data
+VFLD_DIR="$SCRATCH/verification/ecflow/vfld"
+# Model FCTABLE
+FCTABLE_DIR="$SCRATCH/verification/ecflow/FCTABLE"
+
+# A work directory for BUFR to vobs
+WRKDIR="/ec/res4/scratch/duuw/verification/ecflow_work"
+
+# List of STREAMS to process (defined under EXP/STREAM)
+ECFPROJ_STREAMS="DMI_OBS,enea43h22mbr000,enea43h22opr,MEPS_prodmbr000,EC9,ecds_v2"
+export ECFPROJ_STREAMS
+
+# Define the DELAY in vfld/vobs generation and removal
+DELAY_VFLD=2 # Days
+DELAY_VOBS=1 # Days
+DELAY_GRIB=1 # Days
+DELAY_ARCHIVE_SQLITE=2 # Months
+
+# Some variables for the grib extraction
+ICM_MIN=00
+ICM_INT=1
+ICM_MAX=48
+ICM_ROOT="/ec/res4/scratch/duuw/hm_home"
+GRIB_DIR="/ec/res4/scratch/duuw/verification/ecflow/grib"
+GRIB_VER_NLIST="nam_postprocess_DINI"
+ECDEFPATH="/ec/res4/hpcperm/duuw/uwcw_verif/util/gl/definitions/" # Part of ECCODES_DEFINITION_PATH
+export ECDEFPATH
+
+# Minimum file size for vobs
+MINFSIZE=3000
+# Run the bufr to vobs conversion (set to "no" to just do the vobs to sqlite)
+RUN_BUFRVOBS="yes"
+
+# Archive? Set to yes to copy the FCTABLE to ECFS
+ARCHIVE_FCTABLE="yes"
+ARCH_ROOT="/nhd/verification/FCTABLE"
+
+# A flag to clean out FCTABLEs after DELAY_ARCHIVE_SQLITE months
+CLEAN_FCTABLE="no"
+
+export VFLD_DIR FCTABLE_DIR VOBS_DIR WRKDIR HARP_DIR
+export BUFR_ECFS BUFR_DIR MINFSIZE RUN_BUFRVOBS
+export DELAY_VFLD DELAY_VOBS DELAY_ARCHIVE_SQLITE DELAY_GRIB
+export ARCHIVE_FCTABLE ARCH_ROOT CLEAN_FCTABLE
+export ICM_MIN ICM_INT ICM_MAX ICM_ROOT GRIB_DIR GRIB_VER_NLIST
+
+# Load modules
+#
+module unload eccodes
+module unload ecmwf-toolbox
+module load ecmwf-toolbox/2021.08.3.0
+module unload python
+module load python3/3.8.8-01
+module unload ecflow
+module load ecflow ecflow/5.7.0
+module unload troika
+module load troika/0.1.4
+# Add in additional modules for bufr to vobs conversion
+#module load prgenv/gnu
+module unload openmpi
+module load openmpi/4.1.1.1
+module load R # For harp
+
+# ecFlow server
+# port_number is set based on the unique users numeric uid.
+export ECF_PORT=3141
+export ECF_HOST="ecflow-gen-${USER}-001"
+
+

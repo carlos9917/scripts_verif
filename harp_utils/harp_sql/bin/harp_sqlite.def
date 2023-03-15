@@ -1,0 +1,78 @@
+#5.7.0
+suite harp_sqlite
+  edit USER 'nhd'
+  edit ECFPROJ_LIB '/home/nhd/verification/scripts_verif/harp_utils/harp_sql'
+  edit ECFPROJ_CONFIG 'aa'
+  edit EXP 'harp_sqlite'
+  edit ECF_HOME '/home/nhd/ecflow_suites/harp_sqlite/work'
+  edit ECF_INCLUDE '/home/nhd/verification/scripts_verif/harp_utils/harp_sql/share/ecf'
+  edit ECF_FILES '/home/nhd/verification/scripts_verif/harp_utils/harp_sql/share/ecf'
+  edit SCHOST 'hpc'
+  edit ECF_JOB_CMD '%TROIKA% -c %TROIKA_CONFIG% submit -o %ECF_JOBOUT% %SCHOST% %ECF_JOB%'
+  edit ECF_KILL_CMD '%TROIKA% -c %TROIKA_CONFIG% kill %SCHOST% %ECF_JOB%'
+  edit ECF_STATUS_CMD '%TROIKA% -c %TROIKA_CONFIG% monitor %SCHOST% %ECF_JOB%'
+  edit QUEUE 'nf'
+  edit SUB_H 'sbatch.aa.h'
+  edit TASK ''
+  edit YMD ''
+  edit HH ''
+  edit ICM_MIN '00'
+  edit ICM_INT '1'
+  edit ICM_MAX '48'
+  limit par 10
+  family DMI_OBS
+    edit ECFPROJ_STREAM 'DMI_OBS'
+    family run
+      trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
+      repeat date YMD 20230307 20990101 1
+      inlimit par
+      task vobs2sql
+    endfamily
+  endfamily
+  family enea43h22mbr000
+    edit ECFPROJ_STREAM 'enea43h22mbr000'
+    family run
+      trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
+      repeat date YMD 20230307 20990101 1
+      inlimit par
+      task vfld2sql
+    endfamily
+  endfamily
+  family enea43h22opr
+    edit ECFPROJ_STREAM 'enea43h22opr'
+    family run
+      trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
+      repeat date YMD 20230307 20990101 1
+      inlimit par
+      task vfld2sql
+    endfamily
+  endfamily
+  family MEPS_prodmbr000
+    edit ECFPROJ_STREAM 'MEPS_prodmbr000'
+    family run
+      trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
+      repeat date YMD 20230307 20990101 1
+      inlimit par
+      task vfld2sql
+    endfamily
+  endfamily
+  family EC9
+    edit ECFPROJ_STREAM 'EC9'
+    family run
+      trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
+      repeat date YMD 20230307 20990101 1
+      inlimit par
+      task vfld2sql
+    endfamily
+  endfamily
+  family ecds_v2
+    edit ECFPROJ_STREAM 'ecds_v2'
+    family run
+      trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
+      repeat date YMD 20230307 20990101 1
+      inlimit par
+      task vfld2sql
+    endfamily
+  endfamily
+endsuite
+# enddef

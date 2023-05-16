@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+#SBATCH --error=dmi_conv_%j.err
+#SBATCH --output=dmi_conv_%j.out
+#SBATCH --job-name=dmi_conv
 
-MODELS=(ecds_v2 enea43h22mbr000 EC9 enea43h22opr)
+
+MODELS=(ecds_v2 enea43h22mbr000 EC9 enea43h22opr MEPS_prodmbr000)
 module load R
 # SLURM cript to run the conversion from vfld and vobs to sqlite format.
 if [[ -z $1 ]] &&  [[ -z $2 ]]; then 
@@ -17,6 +21,9 @@ fi
 
 YYYY=`echo $EDATE | awk '{print substr($1,1,4)}'`
 MM=`echo $EDATE | awk '{print substr($1,5,2)}'`
+HARP_DIR=/home/nhd/R/harp-verif
+cd $HARP_DIR/pre_processing
+
 if [ -z $3 ]; then
   for MODEL in ${MODELS[@]}; do
   echo "Doing $MODEL"
@@ -36,3 +43,5 @@ else
     ./vfld2sql.R -start_date $SDATE -end_date $EDATE -config_file $CONFIG
   fi
 fi
+cd -
+

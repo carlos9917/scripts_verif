@@ -21,10 +21,11 @@ verif:
 pre:
   fcst_model:
     - enea43h22mbr000
-    - cca_dini25a_l90_arome_3dvar_v1
-    - EC9  
+    - MEPS_prodmbr000
+    - EC9
+    - ecds_v2  
   vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
-  vfld_by: "1h"
+  vfld_by: "3h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
   vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs"
@@ -44,6 +45,8 @@ pre:
     - T
     - S
     - Td
+    - CCtot
+    - vis
 post:
   plot_output: "/ec/res4/scratch/nhd/verification/plots"
   create_png: TRUE

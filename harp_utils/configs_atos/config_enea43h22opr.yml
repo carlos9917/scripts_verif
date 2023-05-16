@@ -55,8 +55,6 @@ scorecards:  # Not fully implemented in user scripts
     - S10m
     - RH2m
     - Pmsl
-    - T
-    - S  
   scores:
     - "bias"
     - "rmse"

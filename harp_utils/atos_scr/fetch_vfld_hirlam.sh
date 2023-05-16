@@ -28,6 +28,17 @@ fetch_comeps()
     rm $TAR
   done
 }
+ecp_ec9()
+{
+  DIR=$SCRATCH/verification/vfld/$MODEL
+  ecp ec:/hlam/vfld_bologna/HRES/${YYYY}/${MM}/* 
+  cd $DIR
+  for TAR in *gz;  do
+   tar zxvf $TAR 
+   rm $TAR
+  done
+  cd -
+}
 
 fetch_model()
 {
@@ -35,7 +46,7 @@ fetch_model()
   [ ! -d $DIR ] &&  mkdir -p $DIR
   rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${MODEL}${YYYY}${MM}* $DIR/
   echo "removing the data from hirlam"
-  #ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${YYYY}${MM}*"
+  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${YYYY}${MM}*"
   if [ $MODEL == MEPS_prodmbr000 ]; then
     cd $DIR 
     for TAR in *.tar.gz; do

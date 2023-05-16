@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#SBATCH --error=ecp_ifs_%j.err
+#SBATCH --output=ecp_ifs_%j.out
+#SBATCH --job-name=ecp_ifsens
+
+
 
 # Copying locally some of the EPS data from the IFS model to compare with COMEPS
 

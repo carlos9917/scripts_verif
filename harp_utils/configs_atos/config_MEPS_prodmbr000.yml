@@ -8,6 +8,12 @@ verif:
   grps: "default"  #use default groupings of leadtime and fcst_cycle
   domains:  #what domains to verify ("All" will just consider all possible synops)
     - "All"
+  members: #what members to verify for each ensemble. Include a list if the members differ between models. Set to NULL to use all available members in an ensemble
+    - NULL
+  lags: #how to lag the members for each ensemble. Include a list if the lags differ between models. Set to "0h" for no lagging
+    - "0h"
+  num_ref_members: #number of reference members to use when computing fair scores for an ensemble. Set to "NA" to not use this option (e.g. for a det run)
+    - "NA"
   fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE"
   obs_path: "/data/users/tobou/verification/OBSTABLE/"
   verif_path: "/ec/res4/scratch/nhd/verification/DMI_data/rds_files"
@@ -20,6 +26,7 @@ pre:
     - "vfld"
   vobs_path: "/data/projects/nckf/danra/vobs/DMI_VOBS"
   vobs_by: "1h"
+  custom_asl_path: NULL
   lags: #include a list of lags for each model if they are different. For a given model, lags should be the same length as members. Set to NULL for no lags
     - NULL  
   members:  #include a list of members for each model if they are different

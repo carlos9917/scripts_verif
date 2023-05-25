@@ -1,0 +1,6 @@
+coordinates_path: "/home/tobou/Desktop/shadows_data.db"
+heights_path: "/home/tobou/Desktop/all_heights.csv"
+sql_dbs_path: "/home/tobou/Desktop/sql_dbs/"
+fcst_path: "/home/tobou/Desktop/sql_dbs/fcst"
+obs_path: "/home/tobou/Desktop/sql_dbs/obs"
+

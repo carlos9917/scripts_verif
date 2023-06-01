@@ -1,6 +1,7 @@
-coordinates_path: "/home/tobou/Desktop/shadows_data.db"
-heights_path: "/home/tobou/Desktop/all_heights.csv"
-sql_dbs_path: "/home/tobou/Desktop/sql_dbs/"
-fcst_path: "/home/tobou/Desktop/sql_dbs/fcst"
-obs_path: "/home/tobou/Desktop/sql_dbs/obs"
+#some paths needed
+coordinates_path: "/data/users/cap/glatmodel/processed_shadows/shadows_data.db"
+heights_path: "/data/users/cap/glatmodel/data_shadows/all_heights.csv"
+sql_dbs_path: "/data/projects/glatmodel/verification/harp"
+fcst_path: "/data/projects/glatmodel/fcst/sql_dbs/"
+obs_path: "/data/projects/glatmodel/obs/sql_dbs/"
 

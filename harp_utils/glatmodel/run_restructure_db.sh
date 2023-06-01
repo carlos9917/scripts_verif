@@ -1,19 +1,25 @@
 #/bin/bash
+eval "$(/data/users/cap/miniconda3/bin/conda shell.bash hook)"
+conda activate py38
+FC=0
+OB=1
+year=2023
+fcst_path=/data/projects/glatmodel/fcst #dump_202301_00.db
+obs_path=/data/projects/glatmodel/obs #dump_202301_00.db
 
-year=2021
+if [[ $FC == 1 ]]; then
+  for filename in $fcst_path/*.db; do
+      echo $filename
+      python restructure_db.py --file=$filename 0 1
+  done
+fi
 
-for filename in $fcst_path/$year/*; do
-    echo $filename
-    python3 restructure_db.py --file=$filename 0 1
-done
-
-mkdir sql_dbs/FCTABLE/glatmodel/$year
-echo $year
-for month in $(seq -f "%02g" 12 )
-do
-	mkdir sql_dbs/FCTABLE/glatmodel/$year/$month
-	cp sql_dbs/FCTABLE/glatmodel/*$year$month* sql_dbs/FCTABLE/glatmodel/$year/$month
-done
+if [[ $OB == 1 ]]; then
+  for filename in $obs_path/dump_12201*.db; do
+     # echo $filename
+     python restructure_db.py --file=$filename --year $year 1 0 
+  done
+fi
 
 
 

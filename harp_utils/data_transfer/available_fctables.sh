@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 module load R
 #MODELS=(enea43h22mbr000 enea43h22opr ecds_v2 MEPS_prodmbr000)
-MODELS=(igb40h11 enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
+#MODELS=(igb40h11 enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
+MODELS=(enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
 
 if [[ -z $1 ]]; then
-   echo "Please provide YYYMM"
+   echo "Please provide YYYYMM (ie, 202301)"
    echo "Alternatively, include the model name as second argument (ie, 202211 EC9)"
    echo "Available models: ${MODELS[@]}"
    exit 1
@@ -12,6 +13,7 @@ else
    DATE=$1
 fi
 CY=12 # which cycle I am checking in the T2m data
+CY=00
 
 FPATH=$SCRATCH/verification/DMI_data
 HVERIF=/home/nhd/R/harp-verif/

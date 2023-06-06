@@ -64,7 +64,7 @@ fetch_ecfs()
   MM=${D1:4:2}
   echo "Fetching tarball for $YYYY $MM"
   PACK=vfldecds_v2${YYYY}${MM}.tar
-  [ ! -f $DEST/$TAR ] && ecp ec:/duuw/harmonie/ecds_v2/vfld/$TAR $DEST
+  [ ! -f $DEST/$PACK ] && ecp ec:/duuw/harmonie/ecds_v2/vfld/$PACK $DEST
   cd $DEST
   for DATE in $(seq $D1 $D2); do  
    tar xvf $PACK vfldecds_v2${DATE}??.tar.gz

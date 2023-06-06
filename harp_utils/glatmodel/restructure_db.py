@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
     con=sqlite3.connect(dbase)
     query="SELECT name FROM sqlite_master WHERE type='table' AND name='SYNOP_PARAMS'";
     df_check= pd.read_sql(query, con)
-    con.close()
     if df_check.empty:
         print(f"Creating SYNOP_PARAMS in {dbase}")
         cursor = con.cursor()
@@ -43,6 +42,7 @@ CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
         con.close()
     else:
         print(f"SYNOP_PARAMS already exists in {dbase}") #: {df_check}")
+        con.close()
 
 def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
     def ts2date(ts):
@@ -97,6 +97,9 @@ def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
         df_out=pd.merge(df_out, df_geo, on='SID')
         
         df_out['leadtime']=df_out['validdate'].map(lambda x:ts2date(x).time().hour + ts2date(x).time().minute/60 )
+        #drop all the fractional times, still to figure out how to use them
+        df_out = df_out[df_out["leadtime"]%1 != 0.5]
+        df_out["leadtime"] = df_out["leadtime"].astype("int64")
         df_out['fcdate']=df_out['validdate']-df_out['leadtime']*3600
         df_out['fcdate']=df_out['fcdate'].astype('int64')
         
@@ -106,11 +109,31 @@ def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
         df_out['units']=units[column_name]
         df_out.rename(columns={column_name:'glatmodel_det'}, inplace=True)
         df_out.drop_duplicates(['SID', 'validdate'], inplace=True)
-        dbase_out=os.path.join(cfg['sql_dbs_path'],'FCTABLE/glatmodel/FCTABLE_'+variables[column_name]+'_'+yearmonth+'_'+cc+'.sqlite')
-        print(f"Writing to {dbase_out}")
-        con=sqlite3.connect(dbase_out)
-        df_out.to_sql('FC', con, if_exists='replace', index=False)
-        con.close()
+        year = yearmonth[0:4]
+        month = yearmonth[4:6]
+        dbase_path = os.path.join(cfg['sql_dbs_path'],"FCTABLE",year,month)
+        if not os.path.isdir(dbase_path):
+            os.makedirs(dbase_path)
+        dbase_out=os.path.join(dbase_path,'FCTABLE_'+variables[column_name]+'_'+yearmonth+'_'+cc+'.sqlite')
+
+        if not os.path.isfile(dbase_out):
+            schema = """CREATE TABLE FC(fcdate INT, leadtime INT, parameter TEXT, SID INT, lat DOUBLE, lon DOUBLE, model_elevation DOUBLE, p DOUBLE, units TEXT, validdate INT, glatmodel_det DOUBLE);"""
+            con=sqlite3.connect(dbase_out)
+            print(f"Creating FC table in {dbase_out}")
+            cursor = con.cursor()
+            cursor.execute(schema)
+            cursor = con.cursor()
+            schema = """CREATE UNIQUE INDEX index_fcdate_leadtime_SID ON FC(fcdate,leadtime,SID);"""
+            cursor.execute(schema)
+            print(f"Writing to {dbase_out}")
+            #con=sqlite3.connect(dbase_out)
+            df_out.to_sql('FC', con, if_exists='replace', index=False)
+            con.close()
+        else:
+            print(f"Writing to {dbase_out}")
+            con=sqlite3.connect(dbase_out)
+            df_out.to_sql('FC', con, if_exists='replace', index=False)
+            con.close()
 
     return df_out
 
@@ -172,10 +195,8 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
          con=sqlite3.connect(dbase_out)
          schema = """
 CREATE TABLE IF NOT EXISTS "SYNOP" (
-"validdate" INTEGER, "SID" INTEGER, "lat" REAL, "lon" REAL, "elev" REAL,
-  "CCtot " REAL, "D10m" REAL, "S10m" REAL, "T2m" REAL, "Td2m" REAL, "RH2m" REAL, "Q2m" REAL, "Ps" REAL, "Pmsl" REAL, "vis" REAL, "Tmax" REAL, "Tmin" REAL, "AccPcp12h" REAL, "Cbase" REAL, "TROAD" REAL, "Ice_road" REAL
-);
-    """
+"validdate" INT, "SID" INT, "lat" REAL, "lon" REAL, "elev" REAL,
+  "CCtot" REAL, "D10m" REAL, "S10m" REAL, "T2m" REAL, "Td2m" REAL, "RH2m" REAL, "Q2m" REAL, "Ps" REAL, "Pmsl" REAL, "vis" REAL, "Tmax" REAL, "Tmin" REAL, "AccPcp12h" REAL, "Cbase" REAL, "TROAD" REAL, "Ice_road" REAL);"""
          cursor = con.cursor()
          cursor.execute(schema)
          con.close()
@@ -191,14 +212,29 @@ CREATE TABLE IF NOT EXISTS "SYNOP" (
          #    insert_row = ",".join([station,str(date)+str(value)])
          #    com = '''INSERT OR REPLACE INTO SYNOP (stationID, stationName, lat, lon) VALUES ('''+insert_row+") "
          print("Merging dara before dumping it")
-         #this liine avoids conflicts with data types when merging
+         #this line avoids conflicts with data types when merging
          df_out[param] = df_out[param].astype(param_type[param])
          #print(df_out.dtypes)
          #print(df_input.dtypes)
          df_dump= pd.merge(df_out, df_input, how='outer', on=['SID', 'validdate',param])
-         #df_dump = pd.concat(df_out,df_input,on=['SID', 'validdate',param],sort=False)
-         df_dump = df_dump.drop_duplicates(['SID', 'validdate'])#, inplace=True)
-         df_dump.to_sql('SYNOP', conn, if_exists='replace', index = False)
+         #for k,station in enumerate(df_dump["SID"]):
+         #    get_ll = df_geo[df_geo["SID"] == station]
+         #    if not get_ll.empty:
+         #        df_dump["lat"].values[k] = get_ll["lat"].values[0]
+         #        df_dump["lon"].values[k] = get_ll["lon"].values[0]
+         #        df_dump["elev"].values[k] = get_ll["elev"].values[0]
+
+         #NOT df_dump = pd.concat(df_out,df_input,on=['SID', 'validdate',param],sort=False)
+         #now merge with the lat lon
+         #the lat,lon and elev will come from df_geo
+         df_dump.drop(labels=['lat','lon','elev'], inplace=True, axis=1)
+         df_write=pd.merge(df_dump, df_geo, on='SID', how='inner', validate='m:1')
+         #df_dump = df_dump.drop_duplicates(['SID', 'validdate'])#, inplace=True)
+         for col in df_write.columns:
+             if col not in ["SID","validdate",param]:
+                 df_write[col]=df_dump.astype(float)
+         df_write.to_sql('SYNOP', conn, if_exists='replace', index = False)
+         con.close()
      	 #df_out.to_sql('SYNOP',con,if_exists='replace',index=False)
 
      	 #df_out.to_sql('SYNOP', con, if_exists='replace', index=False)

@@ -15,6 +15,19 @@ import yaml
 import os
 import sys
 
+def date2ts(date,dformat="%Y-%m-%d %H:%M:%S.%f"):
+    dtime = dt.datetime.strptime(date,dformat)
+    return dtime.replace(tzinfo=timezone.utc).timestamp()
+
+def ts2date(ts):
+    return dt.datetime.utcfromtimestamp(ts)
+
+def tryconvert(df_geo, x):
+    try:
+        return(df_geo[df_geo['station']==x]['lon'].values[0])
+    except:
+        return np.nan
+
 def create_synop_params(dbase:str, variables:dict, units:dict, accum:dict) -> None:
     schema = """
 CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
@@ -45,18 +58,9 @@ CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
         con.close()
 
 def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
-    def ts2date(ts):
-        return dt.datetime.utcfromtimestamp(ts)
-    def date2ts(date,dformat="%Y-%m-%d %H:%M:%S.%f"):
-        dtime = dt.datetime.strptime(date,dformat)
-        return dtime.replace(tzinfo=timezone.utc).timestamp()
     
-    def tryconvert(x):
-        try:
-            return(df_geo[df_geo['station']==x]['lon'].values[0])
-        except:
-            return np.nan
-
+    station_coords_path = cfg["coordinates_path"]
+    print(f'Reading station coordinates from {station_coords_path}')
     con = sqlite3.connect(cfg['coordinates_path'])
     df_coord= pd.read_sql('SELECT station_id, lat, lon FROM STATIONS;', con)
     con.close()
@@ -138,17 +142,7 @@ def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
     return df_out
 
 def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
-    def ts2date(ts):
-        return dt.datetime.utcfromtimestamp(ts)
-    def date2ts(date,dformat="%Y-%m-%d %H:%M:%S.%f"):
-        dtime = dt.datetime.strptime(date,dformat)
-        return dtime.replace(tzinfo=timezone.utc).timestamp()
     
-    def tryconvert(x):
-        try:
-            return(df_geo[df_geo['station']==x]['lon'].values[0])
-        except:
-            return np.nan
     name = dbase.split("_")[1]    
     if name in BUFR.keys():
         param = BUFR[name]
@@ -157,20 +151,13 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
         print(f"{param} not in list of parameters to process")
         return
         
-    #i=0
-    #for name in list(BUFR.keys()):
-    #    if name in dbase:
-    #        param = name
-    #        i+=1
-    #if i==0:
-    #    return
-
     con = sqlite3.connect(cfg['coordinates_path'])
     df_coord = pd.read_sql('SELECT station_id, lat, lon FROM STATIONS;', con)
     con.close()
 
     con = sqlite3.connect(dbase)
-    df_input = pd.read_sql('SELECT ID, TIME, MEAS FROM glatdump;', con)
+    print(f"Reading the raw data for observations from {dbase}")
+    df_raw = pd.read_sql('SELECT ID, TIME, MEAS FROM glatdump;', con)
     con.close()
 
     df_coord.rename(columns={'station_id':'SID'}, inplace=True)
@@ -180,12 +167,12 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
     df_heights.rename(columns={'station':'SID','height':'elev'}, inplace=True)
     df_heights.drop_duplicates('SID', inplace=True)
     df_geo = pd.merge(df_coord, df_heights, on='SID', validate='1:1')
-
     
-    df_input.rename(columns={'ID':'SID', 'TIME':'validdate','MEAS': param}, inplace=True)
-    df_input.drop_duplicates(['SID', 'validdate'], inplace=True) 
-    #print(df_input)
+    df_raw.rename(columns={'ID':'SID', 'TIME':'validdate','MEAS': param}, inplace=True)
+    df_raw.drop_duplicates(['SID', 'validdate'], inplace=True) 
     dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+str(year)+'.sqlite')
+    #for one parameter only
+    dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+param+'_'+str(year)+'.sqlite')
     print(f"Writing obs data to {dbase_out}")
     param_type={"validdate":int, "SID": int, "lat": float, "lon":float, "elev":float,
                  "CCtot":float, "D10m":float,"S10m": float, "T2m":float, "Td2m":float, "RH2m":float, "Q2m":float, 
@@ -193,18 +180,27 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
     if not os.path.isfile(dbase_out):
          print(f"Creating new obs database {dbase_out}")
          con=sqlite3.connect(dbase_out)
-         schema = """
+         #general schema
+         schema_all = """
 CREATE TABLE IF NOT EXISTS "SYNOP" (
 "validdate" INT, "SID" INT, "lat" REAL, "lon" REAL, "elev" REAL,
   "CCtot" REAL, "D10m" REAL, "S10m" REAL, "T2m" REAL, "Td2m" REAL, "RH2m" REAL, "Q2m" REAL, "Ps" REAL, "Pmsl" REAL, "vis" REAL, "Tmax" REAL, "Tmin" REAL, "AccPcp12h" REAL, "Cbase" REAL, "TROAD" REAL, "Ice_road" REAL);"""
+         schema = f"""
+CREATE TABLE IF NOT EXISTS "SYNOP" (
+"validdate" INT, "SID" INT, "lat" REAL, "lon" REAL, "elev" REAL,
+  "{param}" REAL);"""
          cursor = con.cursor()
          cursor.execute(schema)
+         df_write=pd.merge(df_raw, df_geo, on='SID', how='inner', validate='m:1')
+         df_write.to_sql('SYNOP', con, if_exists='replace', index = False)
          con.close()
     else:    
          print(f"Updating obs database {dbase_out}")
          conn=sqlite3.connect(dbase_out)
          #read the database
          df_out = pd.read_sql('SELECT * FROM SYNOP;', conn)
+         import pdb
+         pdb.set_trace()
 
          #for k,station in enumerate(df_input["SID"]):
          #    date = df_input["validdate"].values[k]
@@ -216,7 +212,7 @@ CREATE TABLE IF NOT EXISTS "SYNOP" (
          df_out[param] = df_out[param].astype(param_type[param])
          #print(df_out.dtypes)
          #print(df_input.dtypes)
-         df_dump= pd.merge(df_out, df_input, how='outer', on=['SID', 'validdate',param])
+         df_dump= pd.merge(df_out, df_raw, how='outer', on=['SID', 'validdate',param])
          #for k,station in enumerate(df_dump["SID"]):
          #    get_ll = df_geo[df_geo["SID"] == station]
          #    if not get_ll.empty:
@@ -234,6 +230,8 @@ CREATE TABLE IF NOT EXISTS "SYNOP" (
              if col not in ["SID","validdate",param]:
                  df_write[col]=df_dump.astype(float)
          df_write.to_sql('SYNOP', conn, if_exists='replace', index = False)
+         import pdb
+         pdb.set_trace()
          con.close()
      	 #df_out.to_sql('SYNOP',con,if_exists='replace',index=False)
 
@@ -295,7 +293,9 @@ if __name__ == "__main__":
     if args.process_obs:
         print(f"Doing observations for {args.file}")
         restructure_obs_db(args.file, args.year,cfg)
-        dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+str(args.year)+'.sqlite')
+        #dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+str(args.year)+'.sqlite')
+        print(args.param)
+        dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+BUFR[args.param]+'_'+str(args.year)+'.sqlite')
         create_synop_params(dbase_out, variables, units, accum)
     if args.process_fcst:
         print(f"Doing forecasts for {args.file}")

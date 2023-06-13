@@ -59,11 +59,13 @@ CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
 
 def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
     
-    station_coords_path = cfg["coordinates_path"]
-    print(f'Reading station coordinates from {station_coords_path}')
-    con = sqlite3.connect(cfg['coordinates_path'])
-    df_coord= pd.read_sql('SELECT station_id, lat, lon FROM STATIONS;', con)
+    coord_height_dbase = cfg["coord_height_dbase"]
+    print(f'Reading station and heights {coord_height_dbase}')
+    con = sqlite3.connect(coord_height_dbase)
+    df_geo = pd.read_sql('SELECT * FROM roadstations;', con)
     con.close()
+    df_geo.rename(columns={'height':'model_elevation'}, inplace=True)
+
     print(f"Reading data from {dbase}")
     con = sqlite3.connect(dbase)
     df=pd.read_sql('SELECT * FROM fild7;', con)
@@ -79,17 +81,7 @@ def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
     columns= list(df.columns);
     columns.remove('ID');
     columns.remove('TIME');
-    
-    df_coord.rename(columns={'station_id':'SID'}, inplace=True)
-    station_heights_path = cfg["heights_path"]
-    print(f'Reading station heights from {station_heights_path}')
-    df_heights= pd.read_csv(cfg['heights_path'])
-    df_heights['station']//=10000
-    df_heights.rename(columns={'station':'SID','height':'model_elevation'}, inplace=True)
-    df_heights.drop_duplicates('SID', inplace=True)
-    df_geo=pd.merge(df_coord, df_heights, on='SID', validate='1:1')
 
-    df['ID']//=100
     df.rename(columns={'ID':'SID', 'TIME':'validdate'}, inplace=True)
     
     for column_name in columns:
@@ -151,24 +143,27 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
         print(f"{param} not in list of parameters to process")
         return
         
-    con = sqlite3.connect(cfg['coordinates_path'])
-    df_coord = pd.read_sql('SELECT station_id, lat, lon FROM STATIONS;', con)
+    #con = sqlite3.connect(cfg['coordinates_path'])
+    #df_coord = pd.read_sql('SELECT station_id, lat, lon FROM STATIONS;', con)
+    #con.close()
+    coord_height_dbase = cfg["coord_height_dbase"]
+    print(f'Reading station and heights {coord_height_dbase}')
+    con = sqlite3.connect(coord_height_dbase)
+    df_geo = pd.read_sql('SELECT * FROM roadstations;', con)
     con.close()
+
 
     con = sqlite3.connect(dbase)
     print(f"Reading the raw data for observations from {dbase}")
-    df_raw = pd.read_sql('SELECT ID, TIME, MEAS FROM glatdump;', con)
+    df_raw = pd.read_sql('SELECT ID, SENSOR, TIME, MEAS FROM glatdump;', con)
     con.close()
 
-    df_coord.rename(columns={'station_id':'SID'}, inplace=True)
-    df_heights = pd.read_csv(cfg['heights_path'])
-    df_heights['station']//=10000
-    
-    df_heights.rename(columns={'station':'SID','height':'elev'}, inplace=True)
-    df_heights.drop_duplicates('SID', inplace=True)
-    df_geo = pd.merge(df_coord, df_heights, on='SID', validate='1:1')
-    
-    df_raw.rename(columns={'ID':'SID', 'TIME':'validdate','MEAS': param}, inplace=True)
+    #create new column with 6 digits station number
+    df_raw["SID"] = [str(sid)+str(df_raw["SENSOR"].values[k]).zfill(2) for k,sid in enumerate(df_raw["ID"])] 
+    df_raw["SID"] = df_raw["SID"].astype(int)
+
+    df_raw.rename(columns={'TIME':'validdate','MEAS': param}, inplace=True)
+    df_raw.drop(columns=["ID","SENSOR"],inplace=True)
     df_raw.drop_duplicates(['SID', 'validdate'], inplace=True) 
     dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+str(year)+'.sqlite')
     #for one parameter only
@@ -180,7 +175,7 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
     if not os.path.isfile(dbase_out):
          print(f"Creating new obs database {dbase_out}")
          con=sqlite3.connect(dbase_out)
-         #general schema
+         #general schema (not using anymore)
          schema_all = """
 CREATE TABLE IF NOT EXISTS "SYNOP" (
 "validdate" INT, "SID" INT, "lat" REAL, "lon" REAL, "elev" REAL,
@@ -191,78 +186,25 @@ CREATE TABLE IF NOT EXISTS "SYNOP" (
   "{param}" REAL);"""
          cursor = con.cursor()
          cursor.execute(schema)
-         df_write=pd.merge(df_raw, df_geo, on='SID', how='inner', validate='m:1')
-         df_write.to_sql('SYNOP', con, if_exists='replace', index = False)
+         #add the geo info to the raw data:
+         df_raw_ext=pd.merge(df_raw, df_geo, on='SID', how='inner', validate='m:1')
+         df_raw_ext.to_sql('SYNOP', con, if_exists='replace', index = False)
          con.close()
     else:    
          print(f"Updating obs database {dbase_out}")
          conn=sqlite3.connect(dbase_out)
-         #read the database
+         #read the data alredy in database
          df_out = pd.read_sql('SELECT * FROM SYNOP;', conn)
-         import pdb
-         pdb.set_trace()
-
-         #for k,station in enumerate(df_input["SID"]):
-         #    date = df_input["validdate"].values[k]
-         #    value = df_input[param].values[k]
-         #    insert_row = ",".join([station,str(date)+str(value)])
-         #    com = '''INSERT OR REPLACE INTO SYNOP (stationID, stationName, lat, lon) VALUES ('''+insert_row+") "
-         print("Merging dara before dumping it")
          #this line avoids conflicts with data types when merging
          df_out[param] = df_out[param].astype(param_type[param])
          #print(df_out.dtypes)
          #print(df_input.dtypes)
-         df_dump= pd.merge(df_out, df_raw, how='outer', on=['SID', 'validdate',param])
-         #for k,station in enumerate(df_dump["SID"]):
-         #    get_ll = df_geo[df_geo["SID"] == station]
-         #    if not get_ll.empty:
-         #        df_dump["lat"].values[k] = get_ll["lat"].values[0]
-         #        df_dump["lon"].values[k] = get_ll["lon"].values[0]
-         #        df_dump["elev"].values[k] = get_ll["elev"].values[0]
-
-         #NOT df_dump = pd.concat(df_out,df_input,on=['SID', 'validdate',param],sort=False)
-         #now merge with the lat lon
-         #the lat,lon and elev will come from df_geo
-         df_dump.drop(labels=['lat','lon','elev'], inplace=True, axis=1)
-         df_write=pd.merge(df_dump, df_geo, on='SID', how='inner', validate='m:1')
-         #df_dump = df_dump.drop_duplicates(['SID', 'validdate'])#, inplace=True)
-         for col in df_write.columns:
-             if col not in ["SID","validdate",param]:
-                 df_write[col]=df_dump.astype(float)
+         #add the geo info to the raw data:
+         df_raw_ext = pd.merge(df_raw, df_geo, on='SID', how='inner', validate='m:1')
+         print("Merging data before dumping it")
+         df_write=pd.concat([df_out,df_raw_ext])
          df_write.to_sql('SYNOP', conn, if_exists='replace', index = False)
-         import pdb
-         pdb.set_trace()
          con.close()
-     	 #df_out.to_sql('SYNOP',con,if_exists='replace',index=False)
-
-     	 #df_out.to_sql('SYNOP', con, if_exists='replace', index=False)
-         #con.close()
-    #try:
-
-    #    df_out = pd.read_sql('SELECT * FROM SYNOP;', con)
-    #    df_out.drop(labels=['lat','lon','elev'], inplace=True, axis=1)
-    #    
-    #    df_out= pd.merge(df_out, df_input, how='outer', on=['SID', 'validdate'])
-    #    df_out.drop_duplicates(['SID', 'validdate'], inplace=True)
-    #    df_out=pd.merge(df_out, df_geo, on='SID', how='inner', validate='m:1')
-    #    
-    #    df_out.drop_duplicates(['SID', 'validdate'], inplace=True)
-    #    #df_out.dropna(inplace=True)
-    #    #df_out=pd.merge(df_input, df_geo, how='outer',on='SID')
-    #    try:
-    #    	df_out.to_sql('SYNOP', con, if_exists='replace', index=False)
-    #    except:
-    #    	print("problem saving db")
-    #    	return
-    #except:
-    #    print("output DataFrame does not exist, creating file")
-    #    df_out=pd.merge(df_input, df_geo, on='SID', how='inner', validate='m:1')
-    #    df_out.drop_duplicates(['SID', 'validdate'], inplace=True)
-    #    df_out.dropna(inplace=True)
-    #    df_out.to_sql('SYNOP', con, if_exists='fail', index=False) #?
-    #    
-    #del(df_out)
-    #con.close()
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script so useful.')

@@ -1,7 +1,6 @@
 #some paths needed
-coordinates_path: "/data/users/cap/glatmodel/processed_shadows/shadows_data.db"
-heights_path: "/data/users/cap/glatmodel/data_shadows/all_heights.csv"
+coord_height_dbase: "/data/users/cap/glatmodel/gistools/latlon_UTM/stations_coords_height.db"
 sql_dbs_path: "/data/projects/glatmodel/verification/harp"
 fcst_path: "/data/projects/glatmodel/fcst/sql_dbs/"
 obs_path: "/data/projects/glatmodel/obs/sql_dbs/"
-
+obstable_path: "/data/projects/glatmodel/verification/harp/OBSTABLE"

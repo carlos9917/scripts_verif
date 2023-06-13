@@ -46,7 +46,7 @@ fetch_model()
   [ ! -d $DIR ] &&  mkdir -p $DIR
   rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${MODEL}${YYYY}${MM}* $DIR/
   echo "removing the data from hirlam"
-  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${YYYY}${MM}*"
+  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${MODEL}${YYYY}${MM}*"
   if [ $MODEL == MEPS_prodmbr000 ]; then
     cd $DIR 
     for TAR in *.tar.gz; do
@@ -57,9 +57,9 @@ fetch_model()
 
 }
 
-if [ $MODEL == enea43h22opr ]; then
-
-echo "Fetching comeps"
+if [[ $MODEL == enea43h22opr ]] || [[ $MODEL == comeps ]]; then
+MODEL=enea43h22opr
+echo "Fetching comeps ($MODEL)"
   fetch_comeps
 else
 echo "Fetching $MODEL"

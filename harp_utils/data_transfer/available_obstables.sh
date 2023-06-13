@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-module load R
+module load R/4.0.4
 
 if [[ -z $1 ]]; then
    echo "Please provide YYYY"

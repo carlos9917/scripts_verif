@@ -54,7 +54,7 @@ post:
   plot_output: "/ec/res4/scratch/nhd/verification/plots"
   create_png: TRUE
 scorecards:  # Not fully implemented in user scripts
-  create_scrd: FALSE # Flag to run scorecard generation or not
+  create_scrd: TRUE # Flag to run scorecard generation or not
   ref_model:  ecds_v2
   fcst_model: enea43h22mbr000
   parameters: # Can be different from parameters in "set_params" file"

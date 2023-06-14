@@ -3,4 +3,4 @@ coord_height_dbase: "/data/users/cap/glatmodel/gistools/latlon_UTM/stations_coor
 sql_dbs_path: "/data/projects/glatmodel/verification/harp"
 fcst_path: "/data/projects/glatmodel/fcst/sql_dbs/"
 obs_path: "/data/projects/glatmodel/obs/sql_dbs/"
-obstable_path: "/data/projects/glatmodel/verification/harp/OBSTABLE"
+obstable_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/OBSTABLE"

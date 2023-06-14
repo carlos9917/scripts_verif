@@ -143,16 +143,13 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
         print(f"{param} not in list of parameters to process")
         return
         
-    #con = sqlite3.connect(cfg['coordinates_path'])
-    #df_coord = pd.read_sql('SELECT station_id, lat, lon FROM STATIONS;', con)
-    #con.close()
     coord_height_dbase = cfg["coord_height_dbase"]
     print(f'Reading station and heights {coord_height_dbase}')
     con = sqlite3.connect(coord_height_dbase)
     df_geo = pd.read_sql('SELECT * FROM roadstations;', con)
     con.close()
-
-
+    #rename height as elev
+    df_geo.rename(columns={"height":"elev"},inplace=True)
     con = sqlite3.connect(dbase)
     print(f"Reading the raw data for observations from {dbase}")
     df_raw = pd.read_sql('SELECT ID, SENSOR, TIME, MEAS FROM glatdump;', con)

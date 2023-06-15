@@ -14,9 +14,9 @@ if [[ $FC == 1 ]]; then
   done
 fi
 #11002 S10m, 12201: T2m
-var=12201 #TROAD
-var=12200 #T2m
 var=11002 #S10m
+var=12200 #T2m
+var=12201 #TROAD
 if [[ $OB == 1 ]]; then
   for filename in $obs_path/dump_${var}_2023*.db; do
      # echo $filename

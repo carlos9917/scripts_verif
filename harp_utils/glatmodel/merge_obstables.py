@@ -13,7 +13,7 @@ accum={'WINDSPEED':0.0, 'ROAD_TEMPERATURE': 0.0, 'AIR_TEMPERATURE':0.0}
 with open("config.yml", "r") as ymlfile:
         cfg = yaml.full_load(ymlfile)
 year="2023"
-obstable_path=cfg["obstable_path_atos"]
+obstable_path=cfg["obstable_path"]
 
 merge_list=[]
 for var in ["TROAD","T2m","S10m"]:
@@ -21,6 +21,8 @@ for var in ["TROAD","T2m","S10m"]:
     print(f"Opening {dbase}")
     conn=sqlite3.connect(dbase)
     synop_df=pd.read_sql("SELECT * FROM SYNOP", conn)
+    #This should be done before in the creation of the base synop tables!
+    synop_df.drop_duplicates(["validdate","SID"],inplace=True)
     merge_list.append(synop_df)
     conn.close()
 
@@ -46,7 +48,19 @@ cursor.execute(schema_synop_params)
 
 
 #write the data to SYNOP table
-synop_data.to_sql(name="SYNOP",con=conn,if_exists="replace",index=False)
+base_cols=["validdate","SID", "lat","lon","elev"]
+var_cols=[v for v in synop_data.columns if v not in base_cols]
+write_cols = base_cols + var_cols
+synop_data[write_cols].to_sql(name="SYNOP",con=conn,if_exists="replace",index=False)
+
+dupli = synop_data[synop_data[['validdate',"SID"]].duplicated() == True]
+if not dupli.empty():
+    for k,date in enumerate(dupli["validate"]):
+        for var in var_cols:
+            if dupli[var] == 
+
+import pdb
+pdb.set_trace()
 
 #create indices (note: I need SYNOP to exist already!)
 schema_index = """CREATE UNIQUE INDEX index_validdate_SID ON SYNOP (validdate,SID);"""

@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
         var_names = [variables[key] for key in variables.keys()]
         var_units = [units[key] for key in variables.keys()]
         var_accum = [accum[key] for key in variables.keys()]
-        df_out=pd.DataFrame({"param":var_names,"accum_hours":var_accum,"units":var_units})
+        df_out=pd.DataFrame({"parameter":var_names,"accum_hours":var_accum,"units":var_units})
         con=sqlite3.connect(dbase)
         df_out.to_sql('SYNOP_PARAMS', con, if_exists='replace', index=False)
         con.close()
@@ -162,8 +162,13 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
     df_raw.rename(columns={'TIME':'validdate','MEAS': param}, inplace=True)
     df_raw.drop(columns=["ID","SENSOR"],inplace=True)
     df_raw.drop_duplicates(['SID', 'validdate'], inplace=True) 
+
+    # Drop all instances which are not hourly
+    print(f"Dropping all values not on the hour")
+    df_raw=df_raw[df_raw["validdate"]%3600 == 0]
     dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+str(year)+'.sqlite')
-    #for one parameter only
+
+    #output for one parameter only
     dbase_out = os.path.join(cfg['sql_dbs_path'],'OBSTABLE/OBSTABLE_'+param+'_'+str(year)+'.sqlite')
     print(f"Writing obs data to {dbase_out}")
     param_type={"validdate":int, "SID": int, "lat": float, "lon":float, "elev":float,
@@ -177,6 +182,7 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
 CREATE TABLE IF NOT EXISTS "SYNOP" (
 "validdate" INT, "SID" INT, "lat" REAL, "lon" REAL, "elev" REAL,
   "CCtot" REAL, "D10m" REAL, "S10m" REAL, "T2m" REAL, "Td2m" REAL, "RH2m" REAL, "Q2m" REAL, "Ps" REAL, "Pmsl" REAL, "vis" REAL, "Tmax" REAL, "Tmin" REAL, "AccPcp12h" REAL, "Cbase" REAL, "TROAD" REAL, "Ice_road" REAL);"""
+         #schema for one parameter only
          schema = f"""
 CREATE TABLE IF NOT EXISTS "SYNOP" (
 "validdate" INT, "SID" INT, "lat" REAL, "lon" REAL, "elev" REAL,
@@ -185,7 +191,14 @@ CREATE TABLE IF NOT EXISTS "SYNOP" (
          cursor.execute(schema)
          #add the geo info to the raw data:
          df_raw_ext=pd.merge(df_raw, df_geo, on='SID', how='inner', validate='m:1')
-         df_raw_ext.to_sql('SYNOP', con, if_exists='replace', index = False)
+         df_raw_ext.drop_duplicates(['SID', 'validdate'], inplace=True)
+         # rearrange the columns
+         base_cols=["validdate","SID", "lat","lon","elev"]
+         var_cols=[v for v in df_raw_ext.columns if v not in base_cols]
+         write_cols = base_cols + var_cols
+         df_raw_ext[write_cols].to_sql('SYNOP', con, if_exists='replace', index = False)
+         schema_index = """CREATE UNIQUE INDEX index_validdate_SID ON SYNOP (validdate,SID);"""
+         cursor.execute(schema_index)
          con.close()
     else:    
          print(f"Updating obs database {dbase_out}")
@@ -200,8 +213,16 @@ CREATE TABLE IF NOT EXISTS "SYNOP" (
          df_raw_ext = pd.merge(df_raw, df_geo, on='SID', how='inner', validate='m:1')
          print("Merging data before dumping it")
          df_write=pd.concat([df_out,df_raw_ext])
-         df_write.to_sql('SYNOP', conn, if_exists='replace', index = False)
-         con.close()
+         df_write.drop_duplicates(['SID', 'validdate'], inplace=True)
+         # rearrange the columns
+         base_cols=["validdate","SID", "lat","lon","elev"]
+         var_cols=[v for v in df_write.columns if v not in base_cols]
+         write_cols = base_cols + var_cols
+         df_write[write_cols].to_sql('SYNOP', conn, if_exists='replace', index = False)
+         schema_index = """CREATE UNIQUE INDEX index_validdate_SID ON SYNOP (validdate,SID);"""
+         cursor = conn.cursor()
+         cursor.execute(schema_index)
+         conn.close()
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script so useful.')

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 AVAIL_MODELS=(EC9 ecds_v2  enea43h22opr MEPS_prodmbr000  enea43h22mbr000  igb40h11)
 if [ $# -lt 2 ]; then
     echo "Please provide year and month (2022 01)"

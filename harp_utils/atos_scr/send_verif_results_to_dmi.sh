@@ -7,4 +7,10 @@ RESULTS=$1
 [ -z $RESULTS ] && RESULTS=enea43_intercomparison
 DIR=$PLOTS_PATH/$RESULTS
 echo "Sending plots under $DIR"
-rsync -avz $DIR/* cperalta@hirlam.org:$HIRLAM_PATH/$RESULTS/
+if [ $RESULTS != glatmodel ]; then
+  rsync -avz $DIR/* cperalta@hirlam.org:$HIRLAM_PATH/$RESULTS/
+else
+  PLOTS_PATH=/ec/res4/scratch/nhd/verification/ROAD_MODEL/plots
+  DIR=$PLOTS_PATH/$RESULTS
+  rsync -avz $DIR/* cperalta@hirlam.org:$HIRLAM_PATH/$RESULTS/
+fi

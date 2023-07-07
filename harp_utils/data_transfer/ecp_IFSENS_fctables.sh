@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#SBATCH --error=ecp_ifs_%j.err
-#SBATCH --output=ecp_ifs_%j.out
+#SBATCH --error=ifs_%j.err
+#SBATCH --output=ifs_%j.out
 #SBATCH --job-name=ecp_ifsens
 
 
@@ -25,6 +25,7 @@ FILES=$(els ec:/hlam/harp_bologna/FCTABLE/IFSENS/$YYYY/$MM/*)
 
 for F in ${FILES[@]}; do
  [ ! -f $DEST/$F ] && ecp ec:/hlam/harp_bologna/FCTABLE/IFSENS/$YYYY/$MM/$F $DEST/
+ #ecp ec:/hlam/harp_bologna/FCTABLE/IFSENS/$YYYY/$MM/$F $DEST/
 done
 
 cd $DEST

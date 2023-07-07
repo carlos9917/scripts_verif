@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+#Setting up SCRATCH and other variables here
+source $HOME/verification/scripts_verif/harp_utils/atos_scr/env_cronjobs.sh
+
 yesterday() {
   YYYY=`date --date "1 days ago" +'%Y'`
   MM=`date --date "1 days ago" +'%m'`

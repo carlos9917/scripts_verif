@@ -14,6 +14,51 @@ import argparse
 import yaml
 import os
 import sys
+variables={'WINDSPEED':'S10m', 'ROAD_TEMPERATURE':'TROAD', 'AIR_TEMPERATURE':'T2m',
+           'PRECIP_INTENSITY':'Pcp', 'CLOUDCOVER': 'CCtot', 'CLOUDBASE':'Cbase',
+           'DEWPOINT':'Td2m', 'WATER_ON_ROAD':'AccPcp12h', 
+           'ICE_ON_ROAD':'Ice_road', 'WIND_DIRECTION':'D10m',
+           'PRECIPITATION_TYPE':'Ppcp_type'}
+units={'WINDSPEED':'m/s', 'ROAD_TEMPERATURE': 'degC', 'AIR_TEMPERATURE':'degC', 
+       'PRECIP_INTENSITY':'mm', 'CLOUDCOVER':'okta', 'CLOUDBASE':'m',
+       'DEWPOINT':'degC', 'WATER_ON_ROAD':'mm', 'ICE_ON_ROAD':'mm',
+       'WIND_DIRECTION':'degrees',  'PRECIPITATION_TYPE':'unknown'}
+accum={'WINDSPEED':0.0, 'ROAD_TEMPERATURE': 0.0, 'AIR_TEMPERATURE':0.0,
+       'PRECIP_INTENSITY':1.0, 'CLOUDCOVER':0.0, 'CLOUDBASE':0.0,
+       'DEWPOINT':0.0, 'WATER_ON_ROAD':1.0, 'ICE_ON_ROAD':1.0,
+       'WIND_DIRECTION':0.0,  'PRECIPITATION_TYPE':0.0}
+BUFR={'12200':'T2m', '12201': 'TROAD', '12202':'Td2m', '13213':'AccPcp12h', '11002': 'S10m'}
+
+def check_the_dates(df_out:pd.DataFrame) -> None:
+    """
+    Attempt to check the initial dates for each station
+    """
+    real_dates=pd.DataFrame({"date":[ts2date(ts) for ts in df_out['validdate']],
+                                  "validdate":df_out["validdate"],
+                                  "SID":df_out["SID"]})
+    #check all stations
+    stations = real_dates.drop_duplicates(["SID"])["SID"]
+    #df_out.drop_duplicates(['SID', 'validdate'], inplace=True)
+    print(f"First dates")
+    select_first_date=[]
+    #print(real_dates["date"].values[0])
+    #print(type(real_dates["date"].values[0]))
+    for station in stations:
+        dates=real_dates[real_dates["SID"] == station]
+        dates.sort_values(by="date",inplace=True)
+        begins=dates["date"].iloc[0]
+        print(f"First date for {station} = {begins}")
+        #convert ns64 date to datetime object
+        dates["date"] = dates["date"].dt.date
+        fdate=dt.datetime.strftime(dates["date"].values[0],"%Y%m%d")
+        set_start_date = dt.datetime(int(fdate[0:4]),int(fdate[4:6]),int(fdate[6:8]),0,0)
+        ts_start_date = set_start_date.replace(tzinfo=timezone.utc).timestamp()
+        select_first_date.append(set_start_date)
+        print(f"{station} should start on {set_start_date}")
+        dates["validdate"] = [d - ts_start_date for d in dates["validdate"]]
+        dates['leadtime']=dates['validdate'].map(lambda x:ts2date(x).time().hour + ts2date(x).time().minute/60 )
+        print(dates.head(10))
+    print(f"Final selection of first date :{set(select_first_date)}")
 
 def date2ts(date,dformat="%Y-%m-%d %H:%M:%S.%f"):
     dtime = dt.datetime.strptime(date,dformat)
@@ -57,7 +102,7 @@ CREATE TABLE IF NOT EXISTS "SYNOP_PARAMS" (
         print(f"SYNOP_PARAMS already exists in {dbase}") #: {df_check}")
         con.close()
 
-def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
+def restructure_fcst_db(dbase:str, model:str, cfg:dict) -> pd.DataFrame:
     
     coord_height_dbase = cfg["coord_height_dbase"]
     print(f'Reading station and heights {coord_height_dbase}')
@@ -71,49 +116,60 @@ def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
     df=pd.read_sql('SELECT * FROM fild7;', con)
     con.close()    
     basename = os.path.basename(dbase)
-    basename = basename.replace('.db', '')
-    basename = basename.replace('dump_', '')
-    basename = basename.split('_')
-    yearmonth = basename[0]
-    cc=basename[1]
+    yearmonth = basename.split("_")[1]
+    cycle = basename.split("_")[2].replace(".db","")
     
     df.drop(axis=1, labels='DATETIME', inplace=True)
     columns= list(df.columns);
     columns.remove('ID');
     columns.remove('TIME');
+    columns.remove('FSTEP');
 
-    df.rename(columns={'ID':'SID', 'TIME':'validdate'}, inplace=True)
+    # I replace the name for the TIME and ID columns to the harp names
+    df.rename(columns={'ID':'SID', 'TIME':'validdate',"FSTEP":"leadtime"}, inplace=True)
     
     for column_name in columns:
         
-        df_out = df[['SID', 'validdate', column_name]].copy()
+        df_out = df[['SID', 'validdate','leadtime', column_name]].copy()
         
         df_out['p']=np.nan
-        
+        #before doing the merge, drop any stations from df_geo NOT in df_out
+        unique_to_geo = df_geo.drop_duplicates(["SID"])
+        unique_to_df = df_out.drop_duplicates(["SID"])["SID"].to_list()
+        diff_in_stations = list(set(unique_to_geo)^set(unique_to_df))
+        #print("Differences in stations before correcting for merge")
+        #print(diff_in_stations)
+        df_geo=df_geo[df_geo["SID"].isin(unique_to_df)]
         df_out=pd.merge(df_out, df_geo, on='SID')
-        
-        df_out['leadtime']=df_out['validdate'].map(lambda x:ts2date(x).time().hour + ts2date(x).time().minute/60 )
+
+        #TODO:correct the forecast steps (leadtime)
+        #check the dates before calculating the leadtime
+        #check_the_dates(df_out)
+        #sys.exit(0)
+        #df_out['leadtime']=df_out['validdate'].map(lambda x:ts2date(x).time().hour + ts2date(x).time().minute/60 )
+        #correct strings to add leading zeroes
+        #df_out["leadtime"]=[ts.zfill(4) for ts in df_out["leadtime"]]
+        #df_out["leadtime"] = [float(ts[0:2]) + float(ts[2:4])/60. for ts in df_out["leadtime"]]
+
         #drop all the fractional times, still to figure out how to use them
+        df_out["leadtime"] = df_out["leadtime"].astype("float")
         df_out = df_out[df_out["leadtime"]%1 != 0.5]
         df_out["leadtime"] = df_out["leadtime"].astype("int64")
         df_out['fcdate']=df_out['validdate']-df_out['leadtime']*3600
         df_out['fcdate']=df_out['fcdate'].astype('int64')
-        
-
-            
         df_out['parameter']=variables[column_name]
         df_out['units']=units[column_name]
-        df_out.rename(columns={column_name:'glatmodel_det'}, inplace=True)
+        df_out.rename(columns={column_name:f'{model}_det'}, inplace=True)
         df_out.drop_duplicates(['SID', 'validdate'], inplace=True)
         year = yearmonth[0:4]
         month = yearmonth[4:6]
-        dbase_path = os.path.join(cfg['sql_dbs_path'],"FCTABLE",year,month)
+        dbase_path = os.path.join(cfg['sql_dbs_path'],"FCTABLE",model,year,month)
         if not os.path.isdir(dbase_path):
             os.makedirs(dbase_path)
-        dbase_out=os.path.join(dbase_path,'FCTABLE_'+variables[column_name]+'_'+yearmonth+'_'+cc+'.sqlite')
+        dbase_out=os.path.join(dbase_path,'FCTABLE_'+variables[column_name]+'_'+yearmonth+"_"+cycle+'.sqlite')
 
         if not os.path.isfile(dbase_out):
-            schema = """CREATE TABLE FC(fcdate INT, leadtime INT, parameter TEXT, SID INT, lat DOUBLE, lon DOUBLE, model_elevation DOUBLE, p DOUBLE, units TEXT, validdate INT, glatmodel_det DOUBLE);"""
+            schema = f"""CREATE TABLE FC(fcdate INT, leadtime INT, parameter TEXT, SID INT, lat DOUBLE, lon DOUBLE, model_elevation DOUBLE, p DOUBLE, units TEXT, validdate INT, {model}_det DOUBLE);"""
             con=sqlite3.connect(dbase_out)
             print(f"Creating FC table in {dbase_out}")
             cursor = con.cursor()
@@ -134,13 +190,15 @@ def restructure_fcst_db(dbase:str, cfg:dict) -> pd.DataFrame:
     return df_out
 
 def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
-    
-    name = dbase.split("_")[1]    
+    base_name = os.path.split(dbase)[-1]
+    name = base_name.split("_")[1]    
     if name in BUFR.keys():
         param = BUFR[name]
         print(f"Doing parameter {param}")
     else:
-        print(f"{param} not in list of parameters to process")
+        print("parameter not in list of parameters to process")
+        print(name)
+        print(BUFR.keys())
         return
         
     coord_height_dbase = cfg["coord_height_dbase"]
@@ -229,27 +287,20 @@ if __name__ == "__main__":
     parser.add_argument('--param', type=str)
     parser.add_argument('--file', type=str)
     parser.add_argument('--year', type=int)
+    parser.add_argument('--config', type=str)
     parser.add_argument('process_obs', type=int)
     parser.add_argument('process_fcst', type=int)
+    parser.add_argument('--model', type=str) #change the output of the forecast model
     args = parser.parse_args()
-    variables={'WINDSPEED':'S10m', 'ROAD_TEMPERATURE':'TROAD', 'AIR_TEMPERATURE':'T2m',
-               'PRECIP_INTENSITY':'Pcp', 'CLOUDCOVER': 'CCtot', 'CLOUDBASE':'Cbase',
-               'DEWPOINT':'Td2m', 'WATER_ON_ROAD':'AccPcp12h', 
-               'ICE_ON_ROAD':'Ice_road', 'WIND_DIRECTION':'D10m',
-               'PRECIPITATION_TYPE':'Ppcp_type'}
-    units={'WINDSPEED':'m/s', 'ROAD_TEMPERATURE': 'degC', 'AIR_TEMPERATURE':'degC', 
-           'PRECIP_INTENSITY':'mm', 'CLOUDCOVER':'okta', 'CLOUDBASE':'m',
-           'DEWPOINT':'degC', 'WATER_ON_ROAD':'mm', 'ICE_ON_ROAD':'mm',
-           'WIND_DIRECTION':'degrees',  'PRECIPITATION_TYPE':'unknown'}
-    accum={'WINDSPEED':0.0, 'ROAD_TEMPERATURE': 0.0, 'AIR_TEMPERATURE':0.0,
-           'PRECIP_INTENSITY':1.0, 'CLOUDCOVER':0.0, 'CLOUDBASE':0.0,
-           'DEWPOINT':0.0, 'WATER_ON_ROAD':1.0, 'ICE_ON_ROAD':1.0,
-           'WIND_DIRECTION':0.0,  'PRECIPITATION_TYPE':0.0}
-    BUFR={'12200':'T2m', '12201': 'TROAD', '12202':'Td2m', '13213':'AccPcp12h', '11002': 'S10m'}
     
-    
-    with open("config.yml", "r") as ymlfile:
-        cfg = yaml.full_load(ymlfile)
+    cfg_file = args.config
+    if not os.path.isfile(cfg_file):
+        print(f"Config file {cfg_file} not found!")
+        sys.exit(1)
+    else:
+        with open(cfg_file, "r") as ymlfile:
+            cfg = yaml.full_load(ymlfile)
+
     if args.process_obs:
         print(f"Doing observations for {args.file}")
         restructure_obs_db(args.file, args.year,cfg)
@@ -259,4 +310,4 @@ if __name__ == "__main__":
         create_synop_params(dbase_out, variables, units, accum)
     if args.process_fcst:
         print(f"Doing forecasts for {args.file}")
-        restructure_fcst_db(args.file,cfg)
+        restructure_fcst_db(args.file,args.model,cfg)

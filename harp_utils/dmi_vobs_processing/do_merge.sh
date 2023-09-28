@@ -11,6 +11,14 @@
 #else
 #  module load python3	
 #fi
+
+echo "Cleaning the databases first"
+for SOURCE in DMI IMO MARS; do
+ source ./clean_dbases.sh 2023 $SOURCE
+done
+source ./clean_dbases.sh 2023
+
+echo "End database cleaning"
 module load python3	
 echo "Merging DMI and MARS"
 python3 merge_tables_dmi_mars.py

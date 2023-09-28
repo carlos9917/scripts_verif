@@ -28,7 +28,7 @@ FORCE = os.environ["FORCE"]
 
 # Start YMD/HH
 # This will setup the first date of processing. If it is not set it will not work!
-#START_DTG = os.environ["START_DTG"]
+START_DTG = os.environ["START_DTG"]
 #Test: hardcoded here
 #START_DTG = "20230307"
 start_ymd = START_DTG[0:8]

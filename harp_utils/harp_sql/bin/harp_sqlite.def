@@ -24,7 +24,7 @@ suite harp_sqlite
     edit ECFPROJ_STREAM 'DMI_OBS'
     family run
       trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
-      repeat date YMD 20230307 20990101 1
+      repeat date YMD 20230822 20990101 1
       inlimit par
       task vobs2sql
     endfamily
@@ -33,7 +33,7 @@ suite harp_sqlite
     edit ECFPROJ_STREAM 'enea43h22mbr000'
     family run
       trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
-      repeat date YMD 20230307 20990101 1
+      repeat date YMD 20230822 20990101 1
       inlimit par
       task vfld2sql
     endfamily
@@ -42,7 +42,7 @@ suite harp_sqlite
     edit ECFPROJ_STREAM 'enea43h22opr'
     family run
       trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
-      repeat date YMD 20230307 20990101 1
+      repeat date YMD 20230822 20990101 1
       inlimit par
       task vfld2sql
     endfamily
@@ -51,7 +51,7 @@ suite harp_sqlite
     edit ECFPROJ_STREAM 'MEPS_prodmbr000'
     family run
       trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
-      repeat date YMD 20230307 20990101 1
+      repeat date YMD 20230822 20990101 1
       inlimit par
       task vfld2sql
     endfamily
@@ -60,7 +60,7 @@ suite harp_sqlite
     edit ECFPROJ_STREAM 'EC9'
     family run
       trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
-      repeat date YMD 20230307 20990101 1
+      repeat date YMD 20230822 20990101 1
       inlimit par
       task vfld2sql
     endfamily
@@ -69,7 +69,7 @@ suite harp_sqlite
     edit ECFPROJ_STREAM 'ecds_v2'
     family run
       trigger ((run:YMD == :ECF_DATE) and (:TIME >= 0900))
-      repeat date YMD 20230307 20990101 1
+      repeat date YMD 20230822 20990101 1
       inlimit par
       task vfld2sql
     endfamily

@@ -2,7 +2,7 @@
 module load R/4.0.4
 #MODELS=(enea43h22mbr000 enea43h22opr ecds_v2 MEPS_prodmbr000)
 #MODELS=(igb40h11 enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
-MODELS=(enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
+MODELS=(enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2 panguweather)
 
 if [[ -z $1 ]]; then
    echo "Please provide YYYYMM (ie, 202301)"
@@ -12,8 +12,16 @@ if [[ -z $1 ]]; then
 else
    DATE=$1
 fi
-CY=12 # which cycle I am checking in the T2m data
-CY=00
+if [ ${#DATE} == 6 ]; then
+   CY=12 # which cycle I am checking in the T2m data
+   CY=00
+   echo "Using hard coded cycle $CY"
+elif [ ${#DATE} == 8 ]; then
+  CY=${DATE:6:2}
+  echo "Taking cycle from date: $CY"
+else
+  echo "${#DATE}"
+fi
 
 FPATH=$SCRATCH/verification/DMI_data
 HVERIF=/home/nhd/R/harp-verif/
@@ -45,6 +53,7 @@ if [ -z $2 ]; then
   done
 else
   MODEL=$2
+  [ $MODEL == "comeps" ] && MODEL=enea43h22opr
   if [ $MODEL = check ] ; then
     ls $SCRATCH/verification/vfld/
     exit 1

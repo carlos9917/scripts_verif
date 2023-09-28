@@ -17,7 +17,7 @@ YYYY=${YDAY:0:4}
 MM=${YDAY:4:2}
 DD=${YDAY:6:2}
 EDATE=${YYYY}${MM}${DD}
-
+module load R/4.0.4
 cd $HARP_DIR/pre_processing
 CONFIG=config_dmi/config_$MODEL.yml
 echo "Using $CONFIG"

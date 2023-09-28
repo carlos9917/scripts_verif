@@ -1,0 +1,9 @@
+#some paths needed
+coord_height_dbase: "/ec/res4/scratch/nhd/ROAD_MODEL/stations_coords_height.db"
+#this is where the sqlite will be written to
+sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/glatmodel_redo"
+#this is where the julia-script produced sqlite files are located
+fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/fcst_raw"
+#fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/glatmodel_no_obs"
+obs_path: "/ec/res4/scratch/nhd/ROAD_MODEL/obs_raw"
+obstable_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/OBSTABLE"

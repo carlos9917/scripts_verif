@@ -5,6 +5,12 @@ PLOTS_PATH=/ec/res4/scratch/nhd/verification/plots
 
 road_models=(glatmodel R01 glatmodel_6h R01_6h R01_6h_redo glat_6h_redo)
 RESULTS=$1
+if [ -z $RESULTS ]; then
+echo "Please provide the name of the project (ie, enea_intercomparison)"
+echo "Alternatively include second argument with destination"
+echo "vm = virtual server, else default is hirlam server"
+exit 1
+fi
 
 if [ -z $2 ]; then
     echo "Sending plots to hirlam server"

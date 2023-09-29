@@ -15,17 +15,20 @@ template <- "{file_path}/{det_model}/pangu{YYYY}{MM}{DD}{HH}{LDT2}" #"{YYYYMMDDH
 
 var="T2m"
 fct_template = paste0("{file_path}/{det_model}/{YYYY}/{MM}/FCTABLE_",var,"_{YYYY}{MM}_{HH}.sqlite")
-sql_opts=sqlite_opts(path="/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE/",template=fct_template) #"{file_path}/{det_model}/{YYYY}/{MM}/FCTABLE_{var}_{YYYY}{MM}_{HH}.sqlite")
-#sqlite_opts()
+sql_opts=sqlite_opts(path="/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE/",template=fct_template)
 t2m_interpol <- read_forecast(start_date=start_date,end_date=end_date,fcst_model=model,parameter="2t",file_path=here(raw_data),file_template=template,transformation="interpolate",transformation_opts = trans_opts ,return_data=FALSE, output_file_opts = sql_opts,by="6h") 
 
 
 var="Pmsl"
 fct_template = paste0("{file_path}/{det_model}/{YYYY}/{MM}/FCTABLE_",var,"_{YYYY}{MM}_{HH}.sqlite")
+sql_opts=sqlite_opts(path="/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE/",template=fct_template)
 pres_interpol <- read_forecast(start_date=start_date,end_date=end_date,fcst_model=model,parameter="msl",file_path=here(raw_data),file_template=template,transformation="interpolate",transformation_opts = trans_opts ,return_data=FALSE, output_file_opts = sql_opts,by="6h") 
 
+cat("Doing u10 and v10\n")
 fct_template = paste0("{file_path}/{det_model}/{YYYY}/{MM}/FCTABLE_10u_{YYYY}{MM}_{HH}.sqlite")
+sql_opts=sqlite_opts(path="/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE/",template=fct_template)
 u10 <- read_forecast(start_date=start_date,end_date=end_date,fcst_model=model,parameter="10u",file_path=here(raw_data),file_template=template,transformation="interpolate",transformation_opts = trans_opts ,return_data=FALSE, output_file_opts = sql_opts,by="6h") 
 
 fct_template = paste0("{file_path}/{det_model}/{YYYY}/{MM}/FCTABLE_10v_{YYYY}{MM}_{HH}.sqlite")
+sql_opts=sqlite_opts(path="/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE/",template=fct_template)
 v10 <- read_forecast(start_date=start_date,end_date=end_date,fcst_model=model,parameter="10v",file_path=here(raw_data),file_template=template,transformation="interpolate",transformation_opts = trans_opts ,return_data=FALSE, output_file_opts = sql_opts,by="6h") 

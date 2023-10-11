@@ -11,7 +11,7 @@ import sqlite3
 import pandas as pd
 import numpy as np
 
-def update_dbase(dbase1:str, dbase2:str) -> None:
+def update_dbase(dbase1:str, dbase2:str, model:str) -> None:
     """
     Reads the 2 databases and updates the value of one
     based on the value of the other one.
@@ -43,8 +43,8 @@ def update_dbase(dbase1:str, dbase2:str) -> None:
     # Execute the UPDATE statement
     cursor1.execute("""
     UPDATE FC
-    SET panguweather_det = SQRT(
-        (SELECT panguweather_det FROM FC)*(SELECT panguweather_det FROM FC) +  (SELECT panguweather_det FROM second_db.FC) * (SELECT panguweather_det FROM second_db.FC)
+    SET """+model+"""_det = SQRT(
+        (SELECT """+model+"""_det FROM FC)*(SELECT """+model+"""_det FROM FC) +  (SELECT """+model+"""_det FROM second_db.FC) * (SELECT """+model+"""_det FROM second_db.FC)
     )
     """)
     cursor1.execute('UPDATE FC SET parameter = "S10m"')
@@ -69,19 +69,20 @@ def read_sql(dbase:str) -> pd.DataFrame:
 
 
 #hardcoding this here for the moment.
-MODEL="panguweather"
+#MODEL="panguweather"
 CY="12" #doing only 12 UTC cycle for the moment
 if __name__=="__main__":
     if len(sys.argv) == 1:
-        print("Please provide PERIOD (yearmonth)")
+        print("Please provide PERIOD (yearmonth) and model (ie, panguweather)")
         sys.exit(1)
     else:
         period = sys.argv[1]   
         YYYY=period[0:4]
         MM=period[4:6]
+        MODEL = sys.argv[2]
     DATA=os.path.join("/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE/",MODEL,YYYY,MM)
-    print(f"NOTE the hardcoded path for data. Only updating year and month: {DATA}")
+    print(f"NOTE the hardcoded path for data. Only updating year and month: {DATA} for {MODEL}")
     dbase1=os.path.join(DATA,f"FCTABLE_10u_{period}_{CY}.sqlite")
     dbase2=os.path.join(DATA,f"FCTABLE_10v_{period}_{CY}.sqlite")
-    update_dbase(dbase1, dbase2)
+    update_dbase(dbase1, dbase2,MODEL)
 

@@ -1,7 +1,8 @@
 verif:
-  project_name: "enea43_intercomparison"
+  project_name: "DANRA"
   by_step: "6h"
   fcst_model:
+    - DKREA
     - enea43h22mbr000
     - EC9
     - ecds_v2  
@@ -21,12 +22,9 @@ verif:
   verif_path: "/ec/res4/scratch/nhd/verification/rds_files"
 pre:
   fcst_model:
-    - enea43h22mbr000
-    - MEPS_prodmbr000
-    - EC9
-    - ecds_v2  
+    - DKREA
   vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
-  vfld_by: "3h"
+  vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
   vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs"

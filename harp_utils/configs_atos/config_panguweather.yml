@@ -1,11 +1,14 @@
 verif:
-  project_name: "enea43_intercomparison"
-  by_step: "6h"
+  project_name: "enea43_AI"
+  by_step: "12h"
   fcst_model:
     - enea43h22mbr000
+    - MEPS_prodmbr000
     - EC9
-    - ecds_v2  
-  lead_time: seq(0, 48, 3)
+    - ecds_v2
+    - panguweather
+    - fourcastnet
+  lead_time: seq(0, 48, 12)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
   domains:  #what domains to verify ("All" will just consider all possible synops)
@@ -14,53 +17,37 @@ verif:
     - NULL
   lags: #how to lag the members for each ensemble. Include a list if the lags differ between models. Set to "0h" for no lagging
     - "0h"
-  num_ref_members: #number of reference members to use when computing fair scores for an ensemble. Set to "NA" to not use this option (e.g. for a det run)
-    - "NA"
   fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE"
   obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/OBSTABLE/" #"/ec/res4/scratch/duuw/verification/OBSTABLE"
   verif_path: "/ec/res4/scratch/nhd/verification/rds_files"
 pre:
   fcst_model:
     - enea43h22mbr000
-    - MEPS_prodmbr000
-    - EC9
-    - ecds_v2  
-  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
-  vfld_by: "3h"
+  vfld_path: "/data/projects/nckf/danra/vfld"
+  vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
-  vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs"
+  vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs/IMO"
   vobs_by: "1h"
-  custom_asl_path: NULL
   members:  #include a list of members for each model if they are different
     - NULL
   lags: #include a list of lags for each model if they are different. For a given model, lags should be the same length as members. Set to NULL for no lags
-    - NULL
+    - NULL  
   params:
     - T2m
-    - S10m
-    - Td2m
-    - RH2m
-    - Q2m
     - Pmsl
-    - Pcp
-    - T
-    - S
-    - Td
-    - CCtot
-    - vis
+    - S10m
 post:
   plot_output: "/ec/res4/scratch/nhd/verification/plots"
   create_png: TRUE
 scorecards:  # Not fully implemented in user scripts
   create_scrd: TRUE # Flag to run scorecard generation or not
-  ref_model:  ecds_v2
-  fcst_model: enea43h22mbr000
+  ref_model:  EC9
+  fcst_model: panguweather
   parameters: # Can be different from parameters in "set_params" file"
     - T2m
-    - S10m
-    - RH2m
     - Pmsl
+    - S10m
   scores:
     - "bias"
     - "rmse"
@@ -71,3 +58,4 @@ scorecards:  # Not fully implemented in user scripts
   parallel: FALSE
   num_cores: 1
   plot_signif: TRUE # Plot the actual differnce between fcst_model and ref_model (and the confidence of that difference)
+

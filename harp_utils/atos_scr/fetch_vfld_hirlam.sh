@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-
+#backup server
+SERVER=tenantadmin@136.156.130.100
+#SERVER=cperalta@hirlam.org
 AVAIL_MODELS=(EC9 ecds_v2  enea43h22opr MEPS_prodmbr000  enea43h22mbr000  igb40h11)
 AI_MODELS=(panguweather fourcastnet)
 if [ $# -lt 2 ]; then
@@ -19,10 +21,10 @@ fetch_comeps()
 {
   DIR=$SCRATCH/verification/vfld/$MODEL
   [ ! -d $DIR ] &&  mkdir -p $DIR
-  rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${YYYY}${MM}*.tgz $DIR/
+  rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${YYYY}${MM}*.tgz $DIR/
 
-  echo "removing the data from hirlam"
-  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${YYYY}${MM}*.tgz"
+  echo "removing the data from remote server $SERVER"
+  ssh $SERVER "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${YYYY}${MM}*.tgz"
   #now unpack locally
   cd $DIR
   for TAR in vfld${YYYY}${MM}*.tgz; do
@@ -46,9 +48,9 @@ fetch_model()
 {
   DIR=$SCRATCH/verification/vfld/$MODEL
   [ ! -d $DIR ] &&  mkdir -p $DIR
-  rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${MODEL}${YYYY}${MM}* $DIR/
-  echo "removing the data from hirlam"
-  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${MODEL}${YYYY}${MM}*"
+  rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${MODEL}${YYYY}${MM}* $DIR/
+  echo "removing the data from $SERVER"
+  ssh $SERVER "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${MODEL}${YYYY}${MM}*"
   if [ $MODEL == MEPS_prodmbr000 ]; then
     cd $DIR 
     for TAR in *.tar.gz; do
@@ -63,9 +65,9 @@ fetch_ai_model()
 {
   DIR=$SCRATCH/verification/vfld/$MODEL
   [ ! -d $DIR ] &&  mkdir -p $DIR
-  rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/${YYYY}${MM}* $DIR
-  echo "removing the $MODEL data from hirlam"
-  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -rf ${YYYY}${MM}*"
+  rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/${YYYY}${MM}* $DIR
+  echo "removing the $MODEL data from $SERVER"
+  ssh $SERVER "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -rf ${YYYY}${MM}*"
 }
 
 if [[ ${AI_MODELS[@]} =~ $MODEL ]]; then

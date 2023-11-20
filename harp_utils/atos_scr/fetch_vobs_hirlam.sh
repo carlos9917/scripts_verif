@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#backup server
+SERVER=tenantadmin@136.156.130.100
+#SERVER=cperalta@hirlam.org
+
 VOBS=(DMI IMO MARS)
 if [ $# -lt 2 ]; then
     echo "Please provide year and month (2022 01)"
@@ -14,9 +18,9 @@ fetch_vobs()
   DIR=$SCRATCH/verification/DMI_data/vobs/$CENTER
   [ ! -d $DIR ] &&  mkdir -p $DIR
   echo "Destination: $DIR"
-  rsync -avz cperalta@hirlam.org:/data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER/vobs${YYYY}${MM}* $DIR/
+  rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER/vobs${YYYY}${MM}* $DIR/
   echo "removing the data from hirlam"
-  ssh cperalta@hirlam.org "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER; rm -f vobs${YYYY}${MM}*"
+  ssh $SERVER "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER; rm -f vobs${YYYY}${MM}*"
 
 }
 if [ -z $3 ]; then

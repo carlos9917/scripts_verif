@@ -35,7 +35,7 @@ fetch_comeps()
 ecp_ec9()
 {
   DIR=$SCRATCH/verification/vfld/$MODEL
-  ecp ec:/hlam/vfld_bologna/HRES/${YYYY}/${MM}/* 
+  ecp ec:/hlam/vfld_bologna/HRES/${YYYY}/${MM}/* $DIR
   cd $DIR
   for TAR in *gz;  do
    tar zxvf $TAR 
@@ -49,6 +49,7 @@ fetch_model()
   DIR=$SCRATCH/verification/vfld/$MODEL
   [ ! -d $DIR ] &&  mkdir -p $DIR
   rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL/vfld${MODEL}${YYYY}${MM}* $DIR/
+  chmod 755 $DIR/vfld${MODEL}${YYYY}${MM}*
   echo "removing the data from $SERVER"
   ssh $SERVER "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/$MODEL; rm -f vfld${MODEL}${YYYY}${MM}*"
   if [ $MODEL == MEPS_prodmbr000 ]; then
@@ -79,6 +80,8 @@ if [[ $MODEL == enea43h22opr ]] || [[ $MODEL == comeps ]]; then
 MODEL=enea43h22opr
 echo "Fetching comeps ($MODEL)"
   fetch_comeps
+elif [[ $MODEL == EC9 ]]; then
+  ecp_ec9
 else
 echo "Fetching $MODEL"
   fetch_model

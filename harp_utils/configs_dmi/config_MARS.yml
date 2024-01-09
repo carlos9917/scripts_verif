@@ -24,7 +24,7 @@ pre:
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
-  vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs/MARS"
+  vobs_path: "/ec/res4/scratch/nhx/oprint/MARSOBS" # "/ec/res4/scratch/nhd/verification/DMI_data/vobs/MARS"
   vobs_by: "1h"
   members:  #include a list of members for each model if they are different
     - NULL

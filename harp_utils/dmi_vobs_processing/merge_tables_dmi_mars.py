@@ -15,16 +15,17 @@ import sys
 
 LOCAL_PATH="/ec/res4/scratch/nhd/verification/DMI_data/vobs"
 if len(sys.argv) == 1:
-    print("Path for the databases not provided")
-    print(f"Using hard-coded value: {LOCAL_PATH}")
+    print("Path for the databases and year not provided")
+    sys.exit(1)
 else:
     LOCAL_PATH=sys.argv[1]
-    print(f"CLI provided path for the data: {LOCAL_PATH}")
+    YEAR=sys.argv[2]
+    print(f"CLI provided path for the data: {LOCAL_PATH}, {YEAR}")
    
 
 ### Read database with MARS data
 source="MARS"
-dbase=os.path.join(LOCAL_PATH,source,"OBSTABLE_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,source,f"OBSTABLE_{YEAR}.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -36,7 +37,7 @@ con.close()
 
 #### Read database with DMI data
 source="DMI"
-dbase=os.path.join(LOCAL_PATH,source,"OBSTABLE_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,source,f"OBSTABLE_{YEAR}.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -58,7 +59,7 @@ list_vars = ",".join(df_synop.columns.to_list())
 
 #Create the new database with the merged data
 # new database
-dbase = os.path.join(LOCAL_PATH,"OBSTABLE_DMI_MARS_2023.sqlite")
+dbase = os.path.join(LOCAL_PATH,f"OBSTABLE_DMI_MARS_{YEAR}.sqlite")
 create_table = """
 CREATE TABLE IF NOT EXISTS SYNOP ("""+list_vars+""",PRIMARY KEY (validdate,SID));
 """

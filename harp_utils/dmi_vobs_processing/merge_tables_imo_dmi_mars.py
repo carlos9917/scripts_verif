@@ -2,7 +2,7 @@
 """
 Merge the table DMI_MARS with the IMO table
 IMO data takes precedence
-Input: merged dbase from DMI and MARS data: OBSTABLE_DMI_MARS_2023.sqlite
+Input: merged dbase from DMI and MARS data: OBSTABLE_DMI_MARS_{YEAR}.sqlite
 Output: merged dbase with IMO and the sqlite file above
 """
 import sqlite3
@@ -13,14 +13,15 @@ import sys
 
 LOCAL_PATH="/ec/res4/scratch/nhd/verification/DMI_data/vobs"
 if len(sys.argv) == 1:
-    print("Path for the databases not provided")
-    print(f"Using hard-coded value: {LOCAL_PATH}")
+    print("Path for the databases and year not provided")
+    sys.exit(1)
 else:
     LOCAL_PATH=sys.argv[1]
-    print(f"CLI provided path for the data: {LOCAL_PATH}")
+    YEAR=sys.argv[2]
+    print(f"CLI provided path for the data and year: {LOCAL_PATH}, {YEAR}")
 
 
-dbase=os.path.join(LOCAL_PATH,"OBSTABLE_DMI_MARS_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,f"OBSTABLE_DMI_MARS_{YEAR}.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -32,7 +33,7 @@ con.close()
 
 #### IMO
 source="IMO"
-dbase=os.path.join(LOCAL_PATH,source,"OBSTABLE_2023.sqlite")
+dbase=os.path.join(LOCAL_PATH,source,f"OBSTABLE_{YEAR}.sqlite")
 con=sqlite3.connect(dbase)
 cursor=con.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -54,7 +55,7 @@ list_vars = ",".join(df_synop.columns.to_list())
 
 #Create the new database with the merged data
 # new database
-dbase = os.path.join(LOCAL_PATH,"OBSTABLE_2023.sqlite")
+dbase = os.path.join(LOCAL_PATH,f"OBSTABLE_{YEAR}.sqlite")
 con = sqlite3.connect(dbase)
 merge_synop.to_sql(name="SYNOP",con=con,if_exists="replace",index=False)
 merge_synop_params.to_sql(name="SYNOP_PARAMS",con=con,if_exists="replace",index=False)

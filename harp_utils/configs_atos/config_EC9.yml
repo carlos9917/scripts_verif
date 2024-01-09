@@ -21,7 +21,7 @@ verif:
 pre:
   fcst_model:
     - EC9
-  vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
+  vfld_path: "/ec/res4/scratch/nhx/oprint" #"/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"

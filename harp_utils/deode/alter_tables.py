@@ -6,11 +6,12 @@ to the old format
 
 import sqlite3
 import pandas as pd
+import sys
 
 param = sys.argv[1]
 infile = sys.argv[2]
 
-conn = sqlite3.connect("new/FCTABLE_T2m_202312_00_TEST.sqlite")
+conn = sqlite3.connect(infile) # "new/FCTABLE_T2m_202312_00_TEST.sqlite")
 cursor = conn.cursor()
 
 sql_command = "SELECT * FROM FC"
@@ -37,11 +38,11 @@ conn.close()
 
 # Below I change the data types of the table
 # Connect to the SQLite database
-conn = sqlite3.connect("new/FCTABLE_T2m_202312_00_TEST.sqlite")
+conn = sqlite3.connect(infile)
 cursor = conn.cursor()
 
 # Create a new table with the desired changes, including the column type modification
-new_table_query = """
+new_table_query = f"""
 CREATE TABLE FC_new (
     fcdate INT,    
     leadtime INT,
@@ -53,14 +54,14 @@ CREATE TABLE FC_new (
     p DOUBLE, 
     units TEXT, 
     validdate INT, 
-    DEODE_det DOUBLE
+    {model}_det DOUBLE
 
 );
 """
 cursor.execute(new_table_query)
 
 # Copy data from the old table to the new one
-copy_data_query = "INSERT INTO FC_new SELECT fcdate, CAST(leadtime AS INTEGER), parameter, SID, lat, lon, model_elevation, p, units, validdate, DEOD_det FROM FC;"
+copy_data_query = f"INSERT INTO FC_new SELECT fcdate, CAST(leadtime AS INTEGER), parameter, SID, lat, lon, model_elevation, p, units, validdate, {model}_det FROM FC;"
 cursor.execute(copy_data_query)
 
 # Drop the old table

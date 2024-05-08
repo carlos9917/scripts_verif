@@ -15,8 +15,8 @@ verif:
     - "0h"
   num_ref_members: #number of reference members to use when computing fair scores for an ensemble. Set to "NA" to not use this option (e.g. for a det run)
     - "NA"
-  fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE"
-  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/OBSTABLE/"
+  fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE"
+  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/OBSTABLE"
   verif_path: "/ec/res4/scratch/nhd/verification/rds_files"
 pre:
   fcst_model:

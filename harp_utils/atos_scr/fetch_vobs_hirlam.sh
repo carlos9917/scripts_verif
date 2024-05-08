@@ -18,7 +18,8 @@ fetch_vobs()
   DIR=$SCRATCH/verification/DMI_data/vobs/$CENTER
   [ ! -d $DIR ] &&  mkdir -p $DIR
   echo "Destination: $DIR"
-  rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER/vobs${YYYY}${MM}* $DIR/
+  #rsync -avz $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER/vobs${YYYY}${MM}* $DIR/
+  rsync -az $SERVER:/data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER/vobs${YYYY}${MM}* $DIR/
   echo "removing the data from hirlam"
   ssh $SERVER "cd /data/www/project/portal/uwc_west_validation/DMI_vfld/vobs/$CENTER; rm -f vobs${YYYY}${MM}*"
 

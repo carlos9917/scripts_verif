@@ -1,9 +1,18 @@
 #some paths needed
 coord_height_dbase: "/ec/res4/scratch/nhd/ROAD_MODEL/stations_coords_height.db"
-#this is where the sqlite will be written to
-sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/glatmodel_redo"
-#this is where the julia-script produced sqlite files are located
-fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/fcst_raw"
-#fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/glatmodel_no_obs"
+
+#this is where the sqlite will be written to (both obstable and fctable)
+sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/harp_v0201/OBSTABLE_CORRECTED" #glatmodel_redo"
+
+#this is where the sqite files produced by the julia-script are located
+fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/fcst_raw" #for the original glatmodel
+#fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/glatmodel_no_obs" #for the R01 model with no obs
+
+
 obs_path: "/ec/res4/scratch/nhd/ROAD_MODEL/obs_raw"
-obstable_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/OBSTABLE"
+
+#this path is currently ONLY used by the script that merges the ostables!
+#obstable_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/OBSTABLE"
+#
+##this one is for the new format
+obstable_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/harp_v0201/OBSTABLE_extended"

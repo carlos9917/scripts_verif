@@ -14,8 +14,8 @@ verif:
     - NULL
   lags: #how to lag the members for each ensemble. Include a list if the lags differ between models. Set to "0h" for no lagging
     - "0h"
-  fcst_path: "/data/projects/nckf/danra/verification/FCTABLE"
-  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs/DMI"
+  fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE"
+  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/OBSTABLE/DMI"
   verif_path: "/data/projects/nckf/danra/verification/rds_files"
 pre:
   fcst_model:

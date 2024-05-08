@@ -11,17 +11,20 @@
 #else
 #  module load python3	
 #fi
-YEAR=2024
+YEAR=2022
+
 DBASE_PATH=/ec/res4/scratch/nhd/verification/DMI_data/vobs
 echo "Cleaning the databases first"
 for SOURCE in DMI IMO MARS; do
  source ./clean_dbases.sh $YEAR $SOURCE
 done
-source ./clean_dbases.sh $YEAR
+#source ./clean_dbases.sh $YEAR
 
 echo "End database cleaning"
 module load python3	
 echo "Merging DMI and MARS"
-python3 merge_tables_dmi_mars.py $DBASE_PATH $YEAR
+#python3 merge_tables_dmi_mars.py $DBASE_PATH $YEAR
+python3 merge_tables_dmi_mars_v021.py $DBASE_PATH $YEAR
 echo "Merging DMI, MARS and IMO"
-python3 merge_tables_imo_dmi_mars.py $DBASE_PATH $YEAR
+#python3 merge_tables_imo_dmi_mars.py $DBASE_PATH $YEAR
+python3 merge_tables_imo_dmi_mars_v021.py $DBASE_PATH $YEAR

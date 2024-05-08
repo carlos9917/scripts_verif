@@ -1,12 +1,10 @@
 verif:
-  project_name: "DANRA"
-  by_step: "6h"
+  project_name: "DANRA_seasonal"
+  by_step: "3h"
   fcst_model:
     - DKREA
-    - enea43h22mbr000
-    - EC9
-    - ecds_v2  
-  lead_time: seq(0, 48, 3)
+    - ERA5
+  lead_time: seq(0, 24, 3)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
   domains:  #what domains to verify ("All" will just consider all possible synops)
@@ -17,19 +15,20 @@ verif:
     - "0h"
   num_ref_members: #number of reference members to use when computing fair scores for an ensemble. Set to "NA" to not use this option (e.g. for a det run)
     - "NA"
-  fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/FCTABLE"
-  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/OBSTABLE/" #"/ec/res4/scratch/duuw/verification/OBSTABLE"
+  fcst_path: "/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE"
+  obs_path: "/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/OBSTABLE"
   verif_path: "/ec/res4/scratch/nhd/verification/rds_files"
 pre:
   fcst_model:
     - DKREA
+  lead_time: seq(0, 48, 3)
   vfld_path: "/ec/res4/scratch/nhd/verification/vfld"
   vfld_by: "1h"
   vfld_template:  #include one for each model if they are different
     - "vfld"
   vobs_path: "/ec/res4/scratch/nhd/verification/DMI_data/vobs"
   vobs_by: "1h"
-  custom_asl_path: NULL
+  custom_asl_path: "/perm/nhd/R/dev_harp-verif/harp-verif/verification/allsynop.list" # Local Harmonie allsynop list (activated with use_custom_asl flag in vfld2sql.R)
   members:  #include a list of members for each model if they are different
     - NULL
   lags: #include a list of lags for each model if they are different. For a given model, lags should be the same length as members. Set to NULL for no lags
@@ -52,8 +51,8 @@ post:
   create_png: TRUE
 scorecards:  # Not fully implemented in user scripts
   create_scrd: TRUE # Flag to run scorecard generation or not
-  ref_model:  ecds_v2
-  fcst_model: enea43h22mbr000
+  ref_model:  ERA5
+  fcst_model: DKREA
   parameters: # Can be different from parameters in "set_params" file"
     - T2m
     - S10m
@@ -64,7 +63,7 @@ scorecards:  # Not fully implemented in user scripts
     - "rmse"
   domains: # Construct scorecards for these domains only (must be in verif$domains)
     - "All"
-  pooled_by: fcdate
+  pooled_by: fcst_dttm
   numboot: 100
   parallel: FALSE
   num_cores: 1

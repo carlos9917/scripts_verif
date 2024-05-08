@@ -2,7 +2,9 @@
 module load R/4.0.4
 #MODELS=(enea43h22mbr000 enea43h22opr ecds_v2 MEPS_prodmbr000)
 #MODELS=(igb40h11 enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
-MODELS=(enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2 panguweather fourcastnet)
+MODELS=(enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2 panguweather fourcastnet DKREA)
+FPATH=$SCRATCH/verification/DMI_data/harp_v0201
+echo "base path for data: $FPATH"
 
 if [[ -z $1 ]]; then
    echo "Please provide YYYYMM (ie, 202301)"
@@ -23,7 +25,6 @@ else
   echo "${#DATE}"
 fi
 
-FPATH=$SCRATCH/verification/DMI_data
 HVERIF=/home/nhd/R/harp-verif/
 if [ $DATE == AVAIL ]; then
         echo "Available model data in:"

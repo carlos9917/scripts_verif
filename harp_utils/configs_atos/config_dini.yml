@@ -3,6 +3,7 @@ verif:
   by_step: "3h"
   fcst_model:
     - dini
+    - 
   lead_time: seq(0, 48, 3)
   fcst_type: "det"  #det or eps
   grps: "default"  #use default groupings of leadtime and fcst_cycle
@@ -42,7 +43,7 @@ pre:
     - CCtot
     - vis  
 post:
-  plot_output: "/ec/res4/scratch/nhd/verification/DMI_data/plots"
+  plot_output: "/ec/res4/scratch/nhd/verification/plots"
   create_png: TRUE
 scorecards:  # Not fully implemented in user scripts
   create_scrd: FALSE # Flag to run scorecard generation or not

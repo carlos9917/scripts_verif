@@ -1,9 +1,9 @@
 verif:
-  project_name: "enea43_dini"
-  by_step: "6h"
+  project_name: "ENEA_DINI"
+  by_step: "3h"
   fcst_model:
     - enea43h22mbr000
-    - dini
+    - diniepsmbr000
     - EC9
   lead_time: seq(0, 48, 3)
   fcst_type: "det"  #det or eps
@@ -56,11 +56,11 @@ pre:
     - vis
 post:
   plot_output: "/ec/res4/scratch/nhd/verification/plots"
-  create_png: TRUE
+  create_png: FALSE
 scorecards:  # Not fully implemented in user scripts
   create_scrd: TRUE # Flag to run scorecard generation or not
-  ref_model:  dini
-  fcst_model: enea43h22mbr000
+  ref_model:  EC9
+  fcst_model: diniepsmbr000
   parameters: # Can be different from parameters in "set_params" file"
     - T2m
     - S10m
@@ -71,7 +71,7 @@ scorecards:  # Not fully implemented in user scripts
     - "rmse"
   domains: # Construct scorecards for these domains only (must be in verif$domains)
     - "All"
-  pooled_by: fcdate
+  pooled_by: fcst_dttm
   numboot: 100
   parallel: FALSE
   num_cores: 1

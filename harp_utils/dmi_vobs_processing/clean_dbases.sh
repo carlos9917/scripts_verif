@@ -7,7 +7,6 @@ else
   SOURCE=$2
 fi
 FPATH=$SCRATCH/verification/DMI_data
-HVERIF=/home/nhd/R/harp-verif
 clean_obs()
 {
 if [ -z $SOURCE ]; then

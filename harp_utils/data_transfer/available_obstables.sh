@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-module load R/4.0.4
+#module load R/4.0.4
+module load R/4.2.2
 
 if [[ -z $1 ]]; then
    echo "Please provide YYYY"
@@ -9,8 +10,9 @@ else
    SOURCE=$2
 fi
 
-FPATH=$SCRATCH/verification/DMI_data
-HVERIF=/home/nhd/R/harp-verif
+FPATH=$SCRATCH/verification/DMI_data/harp_v0201
+#HVERIF=/home/nhd/R/harp-verif
+HVERIF=/perm/nhd/R/harp-verif
 
 YYYY=`echo $DATE | awk '{print substr($1,1,4)}'`
 MM=`echo $DATE | awk '{print substr($1,5,2)}'`

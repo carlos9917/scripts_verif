@@ -82,6 +82,7 @@ echo "Fetching comeps ($MODEL)"
   fetch_comeps
 elif [[ $MODEL == EC9 ]]; then
   ecp_ec9
+  #fetch_model
 else
 echo "Fetching $MODEL"
   fetch_model

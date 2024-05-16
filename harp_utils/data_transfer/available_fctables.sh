@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-module load R/4.0.4
+module load R/4.2.2
+#module load R/4.0.4
 #MODELS=(enea43h22mbr000 enea43h22opr ecds_v2 MEPS_prodmbr000)
 #MODELS=(igb40h11 enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2)
 MODELS=(enea43h22mbr000 MEPS_prodmbr000 EC9 enea43h22opr ecds_v2 panguweather fourcastnet DKREA)
@@ -25,7 +26,7 @@ else
   echo "${#DATE}"
 fi
 
-HVERIF=/home/nhd/R/harp-verif/
+HVERIF=/perm/nhd/R/harp-verif
 if [ $DATE == AVAIL ]; then
         echo "Available model data in:"
         for D in $(ls -d $FPATH/FCTABLE/*); do basename $D; done

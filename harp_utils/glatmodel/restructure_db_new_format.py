@@ -269,7 +269,7 @@ def restructure_obs_db(dbase:str, year:int, cfg:dict) -> None:
     #Uncomment here to keep only hourly values!
     #print(f"Dropping all values not on the hour")
     #df_raw=df_raw[df_raw["valid_dttm"]%3600 == 0]
-    dbase_out = os.path.join(dbase_path,'OBSTABLE_'+str(year)+'.sqlite')
+    #dbase_out = os.path.join(dbase_path,'OBSTABLE_'+str(year)+'.sqlite')
 
     #output for one parameter only
     dbase_out = os.path.join(dbase_path,'OBSTABLE_'+param+'_'+str(year)+'.sqlite')

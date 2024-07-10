@@ -1,1 +1,5 @@
 missing_files
+*.err
+*.out
+.RData
+.Rhistory

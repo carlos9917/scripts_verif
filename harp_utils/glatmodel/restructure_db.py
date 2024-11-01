@@ -27,7 +27,9 @@ accum={'WINDSPEED':0.0, 'ROAD_TEMPERATURE': 0.0, 'AIR_TEMPERATURE':0.0,
        'PRECIP_INTENSITY':1.0, 'CLOUDCOVER':0.0, 'CLOUDBASE':0.0,
        'DEWPOINT':0.0, 'WATER_ON_ROAD':1.0, 'ICE_ON_ROAD':1.0,
        'WIND_DIRECTION':0.0,  'PRECIPITATION_TYPE':0.0}
-BUFR={'12200':'T2m', '12201': 'TROAD', '12202':'Td2m', '13213':'AccPcp12h', '11002': 'S10m'}
+#NOTE: CCtot from observations is on % in the road model data. TODO: convert in sqlite file
+BUFR={'12200':'T2m', '12201': 'TROAD', '12202':'Td2m', '13213':'AccPcp12h', '11002': 'S10m',
+       '20010':'CCtot','11001':'D10m'} #20200 is skystatus, but that does not exist
 
 def check_the_dates(df_out:pd.DataFrame) -> None:
     """

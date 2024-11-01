@@ -2,7 +2,11 @@
 coord_height_dbase: "/ec/res4/scratch/nhd/ROAD_MODEL/stations_coords_height.db"
 
 #this is where the sqlite will be written to (both obstable and fctable)
-sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/harp_v0201/FCTABLE" #glatmodel_redo"
+#sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/harp_v0201/FCTABLE" #glatmodel_redo"
+# use this one for fctables
+#sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/harp_v0201/FCTABLE" #glatmodel_redo"
+# use this one for obstables:
+sql_dbs_path: "/ec/res4/scratch/nhd/verification/ROAD_MODEL/harp_v0201" #glatmodel_redo"
 
 #this is where the sqite files produced by the julia-script are located
 fcst_path: "/ec/res4/scratch/nhd/ROAD_MODEL/fcst_raw" #for the original glatmodel

@@ -65,6 +65,25 @@ copy_old_obs()
 
 }
 
+copy_new_obs()
+{
+  echo "Recent observation data copied by period $PERIOD"
+  DEST=/ec/res4/scratch/nhd/verification/DMI_data/vobs/MARS
+  ORIG=ec:/hirlam/oprint/OBS4/${PERIOD}.tar.gz
+  [ -d $DEST/$YYYY ] && rmdir $DEST/$YYYY
+  echo "Copying $ORIG to $DEST"
+  ecp $ORIG $DEST
+  cd $DEST
+  tar zxvf ${PERIOD}.tar.gz 
+  rm ${PERIOD}.tar.gz
+  #sometimes it is all packed in a diff directory. Move them
+  if [ -d ${PERIOD} ]; then
+    mv $PERIOD/* .
+    rmdir $PERIOD
+  fi
+  cd -
+
+}
 
 # variable to save CLI arguments
 dataset=""
@@ -72,16 +91,17 @@ PERIOD=""
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 [-e|-c|-v] <period> [optional_arguments...]"
+    echo "Usage: $0 [-e|-c|-v|-n] <period> [optional_arguments...]"
     echo "  -e: Use ERA5 dataset"
     echo "  -c: Use CARRA2 dataset"
-    echo "  -v: Use vobs dataset"
+    echo "  -o: Use vobs old dataset (up to ca. 1996)"
+    echo "  -n: Use vobs new dataset"
     echo "  <period>: A mandatory second argument for the period (YYYYMM, ie 198909)"
     exit 1
 }
 
 # Parse command line options
-while getopts ":e:c:v:" opt; do
+while getopts ":e:c:o:n:" opt; do
   case $opt in
     e)
       dataset="ERA5"
@@ -91,8 +111,12 @@ while getopts ":e:c:v:" opt; do
       dataset="CARRA2"
       PERIOD="$OPTARG"
       ;;
-    v)
-      dataset="vobs"
+    o)
+      dataset="vobs_old"
+      PERIOD="$OPTARG"
+      ;;
+    n)
+      dataset="vobs_new"
       PERIOD="$OPTARG"
       ;;
     \?)
@@ -109,6 +133,8 @@ done
 # Shift the parsed options out of the argument list
 shift $((OPTIND-1))
 
+echo $dataset
+echo $OPTARG
 # Check if a dataset was selected and if the required argument is provided
 if [ -z "$dataset" ] || [ -z "$PERIOD" ]; then
   echo "Error: You must select a dataset and provide a required argument."
@@ -134,11 +160,16 @@ case $dataset in
     ;;
   "CARRA2")
     echo "Copying CARRA2 dataset for $PERIOD..."
+    STREAM=carra2_spinup
     copy_CARRA2
     ;;
-  "vobs")
-    echo "Copying vobs dataset for $PERIOD..."
+  "vobs_old")
+    echo "Copying old vobs dataset for $PERIOD..."
     copy_old_obs
+    ;;
+  "vobs_new")
+    echo "Copying new vobs dataset for $PERIOD..."
+    copy_new_obs
     ;;
 esac
 

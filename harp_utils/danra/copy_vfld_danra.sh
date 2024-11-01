@@ -38,7 +38,8 @@ copy_ERA5()
   DEST=/ec/res4/scratch/nhd/verification/vfld/ERA5
   echo "$YYYY"
   [ ! -d $DEST ] && mkdir $DEST
-  if [[ $YYYY <  2000 ]] ; then
+  #if [[ $YYYY <  2000 ]] ; then
+  if [[ $YYYY <  1979 ]] ; then
     echo "Copying whole year $YYYY"
     [ -d $DEST/$YYYY ] && rmdir $DEST/$YYYY
     ecfsdir ec:/hirlam/oprint/ECMWF/ERA5/$YYYY $DEST/$YYYY

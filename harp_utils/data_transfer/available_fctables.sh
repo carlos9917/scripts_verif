@@ -26,7 +26,7 @@ else
   echo "${#DATE}"
 fi
 
-HVERIF=/perm/nhd/R/harp-verif
+HVERIF=/perm/nhd/R/latest_harp_verif/harp-verif
 if [ $DATE == AVAIL ]; then
         echo "Available model data in:"
         for D in $(ls -d $FPATH/FCTABLE/*); do basename $D; done

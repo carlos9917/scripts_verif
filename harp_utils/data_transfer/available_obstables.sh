@@ -19,9 +19,20 @@ MM=`echo $DATE | awk '{print substr($1,5,2)}'`
 if [ -z $SOURCE ]; then
   #dbase=/data/projects/nckf/danra/verification/OBSTABLE/OBSTABLE_${YYYY}.sqlite
   dbase=$FPATH/OBSTABLE/OBSTABLE_${YYYY}.sqlite
-  echo "Checking the merged dbase $dbase"
+  if [ ! -f $dbase ]; then
+    echo "$dbase does not exist yet!"
+    exit 1
+  else
+    echo "Checking the merged dbase $dbase"
+  fi
 else  
   dbase=$FPATH/vobs/$SOURCE/OBSTABLE_${YYYY}.sqlite
+  if [ ! -f $dbase ]; then
+    echo "$dbase does not exist yet!"
+    exit 1
+  else
+    echo "Checking the merged dbase $dbase"
+  fi
   echo "Checking source in $dbase"
 fi
 

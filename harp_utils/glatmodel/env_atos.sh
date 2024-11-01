@@ -2,8 +2,8 @@
 export YEAR=2022
 
 #set it to 1 for doing it, 0 for not
-export DO_FC=1
-export DO_OB=0
+export DO_FC=0
+export DO_OB=1
 export SCRATCH=/ec/res4/scratch/nhd
 
 #these are the paths were the data is stored with the processed sqlite files from julia

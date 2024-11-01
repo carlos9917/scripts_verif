@@ -27,9 +27,8 @@ var=12201 #TROAD
 # other codes: '12202':'Td2m', '13213':'AccPcp12h', '11002': 'S10m
 if [[ $DO_OB == 1 ]]; then
   echo "Processing observation data"
-  for var in 11002 12200 12202 13213; do
-  #for var in 11002 12200 12201; do
-  #for var in 12201; do
+  #for var in 12200 12201 12202 13213 11001 11002 20010; do
+  for var in 12200 12201 12202 11002; do
     for filename in $obs_path/dump_${var}_${YEAR}*.db; do
        # echo $filename
        # python restructure_db.py --file=$filename --year $YEAR 1 0 --param $var --config $CONFIG_FILE

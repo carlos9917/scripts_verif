@@ -4,6 +4,7 @@ module load R/4.2.2
 MM=02
 VAR=T2m
 CY=00
+BPATH=/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE/ERA5
 BPATH=/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE/carra2
 
 #first year of production, then add a year as needed
@@ -19,16 +20,27 @@ for year in "${prod_years[@]}"; do
 done
 
 dbases=()
+miss=0
+dbmiss=()
+MODEL=$(basename $BPATH)
+echo $MODEL
+
+for MM in 01 02 03; do
 for year in ${new_years[@]}; do
-DBASE=$BPATH/$year/$MM/FCTABLE_${VAR}_${year}${MM}_${CY}.sqlite
-if [ ! -f $DBASE ]; then
-echo "$DBASE is missing!"
-exit 1
+  DBASE=$BPATH/$year/$MM/FCTABLE_${VAR}_${year}${MM}_${CY}.sqlite
+  if [ ! -f $DBASE ]; then
+  echo "$DBASE is missing!"
+  miss+=1
+  dbmiss+=($DBASE)
 else
-dbases+=($BPATH/$year/$MM/FCTABLE_${VAR}_${year}${MM}_${CY}.sqlite)
+  dbases+=($DBASE)
 fi
 done
-
+done
+if [ $miss != 0 ]; then
+  echo "There was missing data. Stopping here."
+  exit 1
+fi
 # Define the separator
 separator=","
 
@@ -37,3 +49,4 @@ use_dbases=$(IFS="$separator"; echo "${dbases[*]}")
 use_years=$(IFS="$separator"; echo "${new_years[*]}")
 
 Rscript query_dbases.R -dbase "${use_dbases}" -years $use_years -table FC -output report.html
+mv availability_grid.png availability_grid_${MODEL}.png

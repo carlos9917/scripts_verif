@@ -104,7 +104,7 @@ monthly_summary <- monthly_summary %>%
 p <- ggplot(monthly_summary, aes(x=factor(year), y=month_name)) +
   geom_tile(aes(fill = completeness == 100), color="black") +
   scale_fill_manual(values = c("red", "green"), guide = "none") +
-  geom_text(aes(label=label), size=3, color = "black") +
+  geom_text(aes(label=label), size=2, color = "black") + #was using 3 for size originally
   scale_y_discrete(limits=rev(month.abb)) +
   labs(x="Year", y="Month") +
   theme_minimal() +

@@ -17,20 +17,20 @@ done
 }
 
 if [ -z $1 ]; then
-MODEL=carra2
+MODEL=DKREA
 BPATH=/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE/$MODEL
 #first year of production, then add a year as needed
-prod_years=($(seq 1985 5 2020))
 set_prod_years
 else
 MODEL=$1
 MONTHS=$2
 prod_years=($3)
-set_prod_years
+#set_prod_years
 BPATH=/ec/res4/scratch/nhd/verification/DMI_data/harp_v0201/FCTABLE/$MODEL
 fi
 
 
+new_years=($(seq 1990 2023))
 echo "Processing $MODEL and $MONTHS for ${new_years[@]}"
 
 
@@ -40,7 +40,9 @@ dbmiss=()
 MODEL=$(basename $BPATH)
 echo $MODEL
 
-for MM in $MONTHS; do
+MONTHS=($(seq -w 1 12))
+
+for MM in ${MONTHS[@]}; do
 for year in ${new_years[@]}; do
   DBASE=$BPATH/$year/$MM/FCTABLE_${VAR}_${year}${MM}_${CY}.sqlite
   if [ ! -f $DBASE ]; then
@@ -62,6 +64,7 @@ separator=","
 # Use IFS to join the array elements
 use_dbases=$(IFS="$separator"; echo "${dbases[*]}")
 use_years=$(IFS="$separator"; echo "${new_years[*]}")
+echo ${use_years[@]}
 
 Rscript query_dbases.R -dbase "${use_dbases}" -years $use_years -table FC -output report.html
 mv availability_grid.png availability_grid_${MODEL}.png

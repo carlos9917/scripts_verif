@@ -38,7 +38,7 @@ fi
 
 table=SYNOP
 cd $HVERIF/pre_processing
-Rscript ./pull_dates_sql.R -dbase  $dbase -table $table
+Rscript ./pull_dates_sql.R -dbase  $dbase -table $table -csv_file obs_${YYYY}.csv
 cd -
 
 
